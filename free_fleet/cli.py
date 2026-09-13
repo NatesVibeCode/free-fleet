@@ -146,7 +146,7 @@ def _emit(value: Any, json_mode: bool, human: str | None = None) -> None:
 def _store(args: argparse.Namespace) -> BulkLanesStore:
     workspace = Path(getattr(args, "workspace_root", ".")).expanduser().resolve()
     explicit = getattr(args, "db", None)
-    configured = os.environ.get("FREE_FLEET_DB", os.environ.get("BULK_LANES_DB"))
+    configured = os.environ.get("ACCOUNT_FLEET_DB", os.environ.get("FREE_FLEET_DB", os.environ.get("BULK_LANES_DB")))
     path = Path(explicit or configured or "free-fleet.db").expanduser()
     return BulkLanesStore(path if path.is_absolute() else workspace / path)
 

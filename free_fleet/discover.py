@@ -129,9 +129,17 @@ def domain_of(url: str) -> str:
 def canonical_url(url: str) -> str:
     try:
         parts = urlparse(url.strip())
-        return urlunparse((parts.scheme.lower(), parts.netloc.lower(), parts.path.rstrip("/"), "", "", ""))
+        path = parts.path.rstrip("/")
+        return urlunparse((parts.scheme.lower(), parts.netloc.lower(), path, parts.params, parts.query, ""))
     except Exception:
         return url.strip()
+
+
+def _safe_json(resp: httpx.Response, url_or_desc: str) -> Any:
+    try:
+        return resp.json()
+    except (ValueError, json.JSONDecodeError) as exc:
+        raise DiscoverError(f"invalid JSON response from {url_or_desc}: {exc}") from exc
 
 
 # ---------------------------------------------------------------------------
@@ -922,7 +930,7 @@ def search_reddit(
                 params["subreddit"] = sub
             try:
                 resp = _get_with_backoff(client, ARCTIC_POSTS, params=params, timeout=timeout)
-                posts = resp.json().get("data") or []
+                posts = _safe_json(resp, ARCTIC_POSTS).get("data") or []
             except DiscoverError:
                 continue
             for post in posts:
@@ -969,7 +977,7 @@ def fetch_reddit_posts(
             if sub:
                 params["subreddit"] = sub
             resp = _get_with_backoff(client, ARCTIC_POSTS, params=params, timeout=timeout)
-            for post in resp.json().get("data") or []:
+            for post in _safe_json(resp, ARCTIC_POSTS).get("data") or []:
                 if post.get("over_18") in (True, "True", "true"):
                     continue
                 record = _reddit_record(post)
@@ -1066,7 +1074,7 @@ def fetch_reddit_thread(
             params={"link_id": f"t3_{post_id}", "limit": min(max(max_comments * 2, 25), 500)},
             timeout=timeout,
         )
-        comments = resp.json().get("data") or []
+        comments = _safe_json(resp, ARCTIC_COMMENTS).get("data") or []
         kept = [c for c in comments if str(c.get("body") or "").strip() not in REDDIT_EMPTY]
         kept.sort(key=lambda c: int(c.get("score") or 0), reverse=True)
         kept = kept[:max_comments]
@@ -1524,7 +1532,7 @@ def fetch_lobsters(
                 raise DiscoverError(f"unknown Lobsters tag: {tag}") from exc
             raise
         records: list[RawRecord] = []
-        for story in resp.json() or []:
+        for story in _safe_json(resp, url) or []:
             title = str(story.get("title") or "").strip()
             description = str(story.get("description_plain") or "").strip()
             text = f"{title}\n\n{description}".strip() if description else title
@@ -1689,12 +1697,12 @@ def fetch_devto_tag(
         except DiscoverError as exc:
             raise DiscoverError(f"Dev.to listing failed for tag {tag!r}: {exc}") from exc
         records: list[RawRecord] = []
-        for article in resp.json() or []:
+        for article in _safe_json(resp, "Dev.to") or []:
             title = str(article.get("title") or "").strip()
             if full_body:
                 try:
                     detail = _get_with_backoff(client, f"{DEVTO_API}/articles/{article.get('id')}", timeout=timeout)
-                    body = str(detail.json().get("body_markdown") or "").strip()
+                    body = str(_safe_json(detail, "Dev.to article").get("body_markdown") or "").strip()
                 except DiscoverError:
                     body = ""
                 text = f"{title}\n\n{body}".strip() if body else title
@@ -1739,7 +1747,7 @@ def search_devto(
         except DiscoverError as exc:
             raise DiscoverError(f"Dev.to listing failed: {exc}") from exc
         hits: list[SearchHit] = []
-        for article in resp.json() or []:
+        for article in _safe_json(resp, "Dev.to") or []:
             title = str(article.get("title") or "")
             description = str(article.get("description") or "")
             haystack = f"{title} {description} {' '.join(article.get('tag_list') or [])}".lower()
@@ -1801,7 +1809,7 @@ def _ats_records(
             source_uri=get_url(job),
             title=get_title(job),
             item_id=slugify_id(f"{org}-{get_job_id(job)}"),
-            metadata={"ats": source, "org": org},
+            metadata={"ats": source, "org": org, "evidence": "profile"},
         ))
     return records
 
@@ -1826,7 +1834,7 @@ def fetch_greenhouse_board(
             raise DiscoverError(f"unknown Greenhouse board {board!r}")
         if resp.status_code != 200:
             raise DiscoverError(f"Greenhouse returned HTTP {resp.status_code} for board {board!r}")
-        jobs = resp.json().get("jobs") or []
+        jobs = _safe_json(resp, f"Greenhouse board {board}").get("jobs") or []
         return _ats_records(
             jobs, source="greenhouse", org=board, max_jobs=max_jobs,
             get_text=lambda j: extract_text(j.get("content") or ""),
@@ -1859,7 +1867,7 @@ def fetch_ashby_org(
             raise DiscoverError(f"unknown Ashby org {org!r}")
         if resp.status_code != 200:
             raise DiscoverError(f"Ashby returned HTTP {resp.status_code} for org {org!r}")
-        jobs = resp.json().get("jobs") or []
+        jobs = _safe_json(resp, f"Ashby org {org}").get("jobs") or []
         return _ats_records(
             [j for j in jobs if j.get("isListed", True)], source="ashby", org=org, max_jobs=max_jobs,
             get_text=lambda j: (j.get("descriptionPlain") or "") or extract_text(j.get("descriptionHtml") or ""),
@@ -1892,7 +1900,7 @@ def fetch_lever_org(
             raise DiscoverError(f"unknown Lever org {org!r} (many companies migrated off Lever)")
         if resp.status_code != 200:
             raise DiscoverError(f"Lever returned HTTP {resp.status_code} for org {org!r}")
-        jobs = resp.json()
+        jobs = _safe_json(resp, f"Lever org {org}")
         if isinstance(jobs, dict):
             jobs = jobs.get("postings") or jobs.get("data") or []
         return _ats_records(
@@ -1969,7 +1977,14 @@ def fetch_sitemap_urls(
             raise DiscoverError(f"sitemap fetch failed for {sitemap_url}: {exc}") from exc
         if resp.status_code != 200:
             raise DiscoverError(f"sitemap HTTP {resp.status_code} for {sitemap_url}")
-        child_maps, pages = _sitemap_locs(resp.content[:MAX_BYTES])
+        content = resp.content
+        if content[:2] == b"\x1f\x8b":
+            import gzip
+            try:
+                content = gzip.decompress(content)
+            except Exception as exc:
+                raise DiscoverError(f"cannot decompress gzipped sitemap: {exc}") from exc
+        child_maps, pages = _sitemap_locs(content[:MAX_BYTES])
         urls = list(pages)
         for child in child_maps[:10]:
             try:
@@ -2090,9 +2105,17 @@ def crawl_site(
             url, depth = queue.pop(0)
             try:
                 if render_js:
-                    record = fetch_text(url, client=client, timeout=timeout,
-                                        respect_robots=respect_robots, render_js=True)
-                    html = ""
+                    if respect_robots and not robots_allowed(url, client):
+                        raise DiscoverError(f"blocked by robots.txt: {url}")
+                    rendered_html = _render_js(url, timeout=timeout)[:MAX_BYTES]
+                    text = extract_text(rendered_html)
+                    if not text:
+                        raise DiscoverError(f"no extractable text for {url} (even rendered)")
+                    title = _extract_title(rendered_html) or domain_of(url)
+                    record = RawRecord(text=text, source_uri=url, title=title,
+                                       item_id=record_id(url, title),
+                                       metadata={"evidence": "fetched", "rendered": "js"})
+                    html = rendered_html if depth < max_depth else ""
                 else:
                     final_url, raw_header, raw = _http_get(url, client, timeout, respect_robots)
                     record = _record_from_response(final_url, raw_header, raw, url)
@@ -2139,9 +2162,13 @@ def to_input_items(records: Sequence[RawRecord], max_chars: int | None = None) -
             text = text[:max_chars]
         item_id = slugify_id(rec.item_id or record_id(rec.source_uri, rec.title))
         if item_id in seen:
-            item_id = slugify_id(f"{item_id}-{_stable_suffix(rec.source_uri)}")
-            if item_id in seen:
-                continue
+            base_id = item_id
+            suffix = _stable_suffix(rec.source_uri) if rec.source_uri else _stable_suffix(rec.text)
+            item_id = slugify_id(f"{base_id}-{suffix}")
+            counter = 1
+            while item_id in seen:
+                item_id = slugify_id(f"{base_id}-{suffix}-{counter}")
+                counter += 1
         seen.add(item_id)
         items.append(InputItem(
             item_id=item_id,

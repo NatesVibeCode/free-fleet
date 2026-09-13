@@ -77,7 +77,7 @@ def _decay_weight(ts: float | None, now_ts: float, half_life_hours: float) -> fl
 
 
 def default_db_path() -> Path:
-    configured = os.environ.get("FREE_FLEET_DB", os.environ.get("BULK_LANES_DB"))
+    configured = os.environ.get("ACCOUNT_FLEET_DB", os.environ.get("FREE_FLEET_DB", os.environ.get("BULK_LANES_DB")))
     return Path(configured).expanduser() if configured else Path.cwd() / "free-fleet.db"
 
 

@@ -66,8 +66,8 @@ def is_free_in_schema(model_data: dict) -> bool:
     return classify_price_state(model_data) is PriceState.PRICE_OBSERVED_ZERO
 
 class RouteCatalog:
-    def __init__(self, config_path: Optional[Path] = None, db_path: Optional[Path] = None):
-        self.config_path = config_path or DEFAULT_CONFIG_PATH
+    def __init__(self, config_path: Optional[Path | str] = None, db_path: Optional[Path | str] = None):
+        self.config_path = Path(config_path) if config_path else DEFAULT_CONFIG_PATH
         self._lock = threading.RLock()
         resolved_db = db_path or (self.config_path.with_suffix(".db") if config_path else None)
         self.store = BulkLanesStore(resolved_db)
@@ -355,12 +355,15 @@ class RouteCatalog:
                     is_zero_price_route = True
 
             run_is_free_only = True
-            if policy and (
-                getattr(policy, "max_cost_per_1k_input", 0.0) > 0
-                or getattr(policy, "max_cost_per_1k_output", 0.0) > 0
-                or getattr(policy, "allowed_routes", None)
-            ):
-                run_is_free_only = False
+            if policy:
+                if getattr(policy, "free_only", False):
+                    run_is_free_only = True
+                elif (
+                    getattr(policy, "max_cost_per_1k_input", 0.0) > 0
+                    or getattr(policy, "max_cost_per_1k_output", 0.0) > 0
+                    or getattr(policy, "allowed_routes", None)
+                ):
+                    run_is_free_only = False
 
             if reported_cost == 0:
                 if target_route:

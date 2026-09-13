@@ -220,3 +220,150 @@ def test_mcp_server_evaluate_tool(tmp_path: Path):
     server = create_mcp_server(tmp_path)
     tool_names = [tool.name for tool in anyio.run(server.list_tools)]
     assert "free_fleet_eval" in tool_names
+
+
+def test_canonical_url_preserves_query_params():
+    from free_fleet.discover import canonical_url
+
+    u1 = "https://news.ycombinator.com/item?id=123"
+    u2 = "https://news.ycombinator.com/item?id=456"
+    assert canonical_url(u1) != canonical_url(u2)
+    assert canonical_url("https://news.ycombinator.com/item?id=123#reply") == "https://news.ycombinator.com/item?id=123"
+    assert canonical_url("https://example.com/path/?a=1") == "https://example.com/path?a=1"
+
+
+def test_to_input_items_handles_multiple_collisions():
+    from free_fleet.discover import to_input_items, RawRecord
+
+    records = [
+        RawRecord(text="Item 1 text", source_uri="https://example.com/feed", title="Feed item"),
+        RawRecord(text="Item 2 text", source_uri="https://example.com/feed", title="Feed item"),
+        RawRecord(text="Item 3 text", source_uri="https://example.com/feed", title="Feed item"),
+        RawRecord(text="Item 4 text", source_uri="https://example.com/feed", title="Feed item"),
+    ]
+    items = to_input_items(records)
+    assert len(items) == 4
+    item_ids = [it.item_id for it in items]
+    assert len(set(item_ids)) == 4
+
+
+def test_ats_records_includes_profile_evidence():
+    from free_fleet.discover import _ats_records
+
+    jobs = [{"id": 42, "title": "Staff Engineer", "content": "Full text of posting"}]
+    records = _ats_records(
+        jobs,
+        source="greenhouse",
+        org="stripe",
+        get_text=lambda j: j["content"],
+        get_url=lambda j: f"https://boards.greenhouse.io/stripe/jobs/{j['id']}",
+        get_title=lambda j: j["title"],
+        get_job_id=lambda j: str(j["id"]),
+    )
+    assert len(records) == 1
+    assert records[0].metadata.get("evidence") == "profile"
+    assert records[0].metadata.get("ats") == "greenhouse"
+    assert records[0].metadata.get("org") == "stripe"
+
+
+def test_gzipped_sitemap_decompression(tmp_path: Path):
+    import gzip
+    from free_fleet.discover import fetch_sitemap_urls
+    import httpx
+
+    xml = b"""<?xml version="1.0" encoding="UTF-8"?>
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
+<url><loc>https://example.com/page1</loc></url>
+<url><loc>https://example.com/page2</loc></url>
+</urlset>"""
+    gzipped = gzip.compress(xml)
+
+    def mock_handler(request):
+        return httpx.Response(200, content=gzipped, headers={"Content-Type": "application/x-gzip"})
+
+    transport = httpx.MockTransport(mock_handler)
+    client = httpx.Client(transport=transport)
+    urls = fetch_sitemap_urls("https://example.com/sitemap.xml.gz", client=client)
+    assert urls == ["https://example.com/page1", "https://example.com/page2"]
+
+
+def test_scoring_respects_free_only_policy(tmp_path: Path):
+    from free_fleet.scoring import filter_and_rank_routes
+    from free_fleet.models import RoutePolicy
+    from free_fleet.store import BulkLanesStore
+
+    store = BulkLanesStore(tmp_path / "test.db")
+    routes = [
+        {"id": "paid/model-1", "provider": "paid", "price_state": "unknown", "cost_per_1k_input": 5.0, "cost_per_1k_output": 15.0},
+        {"id": "free/model-1", "provider": "free", "price_state": "price_observed_zero", "cost_per_1k_input": 0.0, "cost_per_1k_output": 0.0},
+    ]
+    ranked = filter_and_rank_routes(routes, store=store, policy=RoutePolicy(free_only=True))
+    assert ranked == ["free/model-1"]
+
+
+def test_circuit_breaker_trips_when_route_pinned_and_free_only(tmp_path: Path):
+    from free_fleet.catalog import RouteCatalog, RouteCircuitBreaker
+    from free_fleet.models import RoutePolicy
+
+    cat = RouteCatalog(tmp_path / "routes.json", db_path=tmp_path / "test.db")
+    cat.add_route("openrouter/test-model", provider="openrouter", cost_per_1k_input=0.0, cost_per_1k_output=0.0)
+    # Set price_state to unknown to verify policy.free_only forces run_is_free_only
+    for r in cat.data["routes"]:
+        if r["id"] == "openrouter/test-model":
+            r["price_state"] = "unknown"
+    cat.save()
+
+    policy = RoutePolicy(free_only=True, allowed_routes=["openrouter/test-model"])
+    with pytest.raises(RouteCircuitBreaker):
+        cat.record_cost("openrouter/test-model", 0.05, policy=policy)
+
+
+def test_route_catalog_init_with_string_path(tmp_path: Path):
+    from free_fleet.catalog import RouteCatalog
+
+    str_path = str(tmp_path / "custom_routes.json")
+    catalog = RouteCatalog(str_path)
+    assert isinstance(catalog.config_path, Path)
+
+
+def test_account_fleet_db_env_var_respected(monkeypatch, tmp_path: Path):
+    from free_fleet.store import default_db_path
+    from free_fleet.cli import _store
+    import argparse
+
+    custom_db = str(tmp_path / "acct.db")
+    monkeypatch.setenv("ACCOUNT_FLEET_DB", custom_db)
+    monkeypatch.delenv("FREE_FLEET_DB", raising=False)
+    monkeypatch.delenv("BULK_LANES_DB", raising=False)
+
+    assert str(default_db_path()) == custom_db
+
+    args = argparse.Namespace(workspace_root=str(tmp_path), db=None)
+    store = _store(args)
+    assert str(store.path) == custom_db
+
+
+def test_safe_json_helper():
+    from free_fleet.discover import _safe_json, DiscoverError
+    import httpx
+
+    resp_bad = httpx.Response(200, text="<html>Cloudflare 502 error</html>")
+    with pytest.raises(DiscoverError) as exc_info:
+        _safe_json(resp_bad, "https://example.com/api")
+    assert "invalid JSON response" in str(exc_info.value)
+
+
+def test_crawl_site_link_extraction_with_render_js(monkeypatch):
+    from free_fleet.discover import crawl_site
+    import httpx
+
+    rendered_html = '<html><body><h1>Welcome</h1><a href="/subpage">Next</a></body></html>'
+    monkeypatch.setattr("free_fleet.discover._render_js", lambda url, timeout: rendered_html)
+
+    client = httpx.Client()
+    records, skipped = crawl_site("https://example.com", client=client, max_pages=2, render_js=True, respect_robots=False)
+    assert len(records) >= 1
+    # Check that subpage was discovered from rendered HTML
+    sources = [r.source_uri for r in records]
+    assert "https://example.com" in sources
+

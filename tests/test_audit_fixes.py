@@ -726,4 +726,106 @@ def test_resume_campaign_fallback_output_path(tmp_path):
     assert resumed_packet["run_id"] == "run_fallback_test"
 
 
+def test_export_top_zero_and_negative(tmp_path: Path):
+    from free_fleet.export import export_clean_packet, export_clean_csv
+    from free_fleet.models import TaskSpec
+    from free_fleet.store import digest_json
+    import pytest
 
+    task = TaskSpec(
+        name="test-top",
+        claims_schema={
+            "type": "object",
+            "properties": {"val": {"type": "integer"}},
+            "required": ["val"],
+            "additionalProperties": False,
+        },
+    )
+    task_dump = task.model_dump(mode="json", by_alias=True)
+    run_data = {
+        "run_id": "r1",
+        "task": task_dump,
+        "task_revision": digest_json(task_dump),
+        "input_digest": "d" * 64,
+        "batches": {
+            "b1": {
+                "status": "verified",
+                "result": [
+                    {
+                        "item_id": "rec-1",
+                        "source_uri": "https://example.com/1",
+                        "source_digest": "a" * 64,
+                        "content_type": "text/plain",
+                        "claims": {"val": 10},
+                        "quotes": [{"slice_id": "full", "start": 0, "end": 4, "text": "0123"}],
+                    },
+                    {
+                        "item_id": "rec-2",
+                        "source_uri": "https://example.com/2",
+                        "source_digest": "a" * 64,
+                        "content_type": "text/plain",
+                        "claims": {"val": 20},
+                        "quotes": [{"slice_id": "full", "start": 0, "end": 4, "text": "0123"}],
+                    },
+                ],
+            }
+        },
+    }
+
+    # top = 0 should return 0 items
+    pkt = export_clean_packet(run_data, tmp_path / "packet0.json", top=0)
+    assert len(pkt["records"]) == 0
+    assert pkt["total_verified_records"] == 0
+
+    csv_path = tmp_path / "out0.csv"
+    export_clean_csv(run_data, csv_path, top=0)
+    lines = csv_path.read_text(encoding="utf-8").strip().splitlines()
+    # Only header line should exist
+    assert len(lines) == 1
+
+    # negative top should raise ValueError
+    with pytest.raises(ValueError, match="top must be non-negative"):
+        export_clean_packet(run_data, tmp_path / "packet_neg.json", top=-1)
+
+
+def test_engine_run_campaign_empty_items(tmp_path: Path):
+    from free_fleet.store import FreeFleetStore
+    from free_fleet.engine import Engine
+    from free_fleet.task import create_task_from_preset
+    import pytest
+
+    store = FreeFleetStore(tmp_path / "store.db")
+    task = create_task_from_preset("test_task")
+    store.register_task(task)
+    engine = Engine(task=task, store=store)
+
+    with pytest.raises(ValueError, match="input contains no items"):
+        engine.run_campaign(raw_items=[], run_id="empty_run", input_path=str(tmp_path / "in.json"))
+
+
+def test_export_clean_csv_invalid_batch_shape(tmp_path: Path):
+    from free_fleet.export import export_clean_csv
+    from free_fleet.models import TaskSpec
+    import pytest
+
+    task = TaskSpec(
+        name="test-shape",
+        claims_schema={
+            "type": "object",
+            "properties": {"a": {"type": "string"}},
+            "required": ["a"],
+            "additionalProperties": False,
+        },
+    )
+    run_data = {
+        "run_id": "r1",
+        "task": task.model_dump(mode="json", by_alias=True),
+        "batches": {
+            "b1": {
+                "status": "verified",
+                "result": "not-a-list-or-dict",
+            }
+        },
+    }
+    with pytest.raises(ValueError, match="verified batch result has an invalid shape"):
+        export_clean_csv(run_data, tmp_path / "out.csv")

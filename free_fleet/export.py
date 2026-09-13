@@ -85,7 +85,7 @@ def _build_item_route_map(run_data: dict) -> dict[str, str]:
         elif isinstance(result, dict) and isinstance(result.get("items"), list):
             items = result["items"]
         for item in items:
-            item_id = item.get("item_id") if isinstance(item, dict) else None
+            item_id = item.get("item_id") if isinstance(item, dict) else getattr(item, "item_id", None)
             if item_id:
                 mapping[str(item_id)] = str(route_id)
     return mapping
@@ -108,10 +108,10 @@ def _filter_and_sort_records(
     if filter_expr:
         res = [r for r in res if _evaluate_filter(r.claims, filter_expr)]
     if sort_by:
-        def sort_key(rec: ExtractedItem) -> Any:
+        def sort_key(rec: ExtractedItem):
             v = rec.claims.get(sort_by)
             if v is None:
-                return (0, 0.0, "") if descending else (3, 0.0, "")
+                return (0, 0.0, "")
             try:
                 numeric = float(v)
             except (ValueError, TypeError):
@@ -124,7 +124,9 @@ def _filter_and_sort_records(
                         numeric = adj
             return (2 if descending else 1, numeric, "")
         res.sort(key=sort_key, reverse=descending)
-    if top is not None and top > 0:
+    if top is not None:
+        if top < 0:
+            raise ValueError("top must be non-negative")
         res = res[:top]
     return res
 
@@ -154,7 +156,7 @@ def export_clean_csv(
             elif isinstance(results, dict) and "items" in results:
                 validated = [ExtractedItem.model_validate(item) for item in results["items"]]
             else:
-                continue
+                raise ValueError("verified batch result has an invalid shape")
             for item in validated:
                 task.validate_claims(item.claims)
             verified_records.extend(validated)
@@ -332,7 +334,7 @@ def export_clean_packet(
                     flat["rank"] = idx
                 f.write(json.dumps(flat, ensure_ascii=False) + "\n")
     else:
-        output_path.write_text(json.dumps(packet, indent=2))
+        output_path.write_text(json.dumps(packet, indent=2), encoding="utf-8")
 
     return packet
 

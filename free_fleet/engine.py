@@ -323,6 +323,8 @@ class Engine:
         policy: Optional[RoutePolicy] = None,
     ) -> dict:
         """Register a campaign in SQLite, then execute its leased batches."""
+        if not raw_items:
+            raise ValueError("input contains no items")
         if policy:
             self.policy = policy
         batches = pack_items(raw_items, batch_size=self.task.batch_size, max_slice_chars=self.task.max_slice_chars)

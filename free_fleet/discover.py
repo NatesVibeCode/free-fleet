@@ -1139,7 +1139,7 @@ def fetch_hn_thread(
         close = True
     try:
         story = _hn_item(item_id, client, timeout)
-        if not story or story.get("type") not in ("story", "poll", "job", None):
+        if not story or story.get("type") not in ("story", "poll", "job", "comment", None):
             raise DiscoverError(f"HN item {item_id} not found")
         parts: list[str] = []
         title = str(story.get("title") or f"HN {item_id}")
@@ -1378,12 +1378,7 @@ def search_discourse(
             resp = client.get(f"{base}/search.json", params={"q": query.strip()}, timeout=timeout)
         except Exception as exc:
             raise DiscoverError(f"Discourse search failed for {base}: {exc}") from exc
-        if resp.status_code != 200:
-            raise DiscoverError(f"Discourse search HTTP {resp.status_code} for {base}")
-        try:
-            payload = resp.json()
-        except Exception as exc:
-            raise DiscoverError(f"Discourse search non-JSON for {base}") from exc
+        payload = _safe_json(resp, f"Discourse search for {base}")
         titles = {t.get("id"): _hn_clean(str(t.get("fancy_title") or t.get("title") or ""))
                   for t in payload.get("topics") or []}
         hits: list[SearchHit] = []
@@ -1429,10 +1424,7 @@ def fetch_discourse_topic(
             raise DiscoverError(f"Discourse topic not found: {base}/t/{topic_id}")
         if resp.status_code != 200:
             raise DiscoverError(f"Discourse topic HTTP {resp.status_code}: {base}/t/{topic_id}")
-        try:
-            topic = resp.json()
-        except Exception as exc:
-            raise DiscoverError(f"Discourse topic non-JSON: {base}/t/{topic_id}") from exc
+        topic = _safe_json(resp, f"Discourse topic {base}/t/{topic_id}")
         title = _html.unescape(str(topic.get("title") or f"Topic {topic_id}"))
         lines = [title]
         count = 0
@@ -1484,7 +1476,7 @@ def fetch_discourse_search(
                 raise DiscoverError(f"Discourse search failed for {base}: {exc}") from exc
             if resp.status_code != 200:
                 raise DiscoverError(f"Discourse search HTTP {resp.status_code} for {base}")
-            for post in resp.json().get("posts") or []:
+            for post in _safe_json(resp, f"Discourse search {base}").get("posts") or []:
                 topic_id = post.get("topic_id")
                 if topic_id and topic_id not in topic_ids:
                     topic_ids.append(topic_id)
@@ -1495,7 +1487,7 @@ def fetch_discourse_search(
                 raise DiscoverError(f"Discourse latest failed for {base}: {exc}") from exc
             if resp.status_code != 200:
                 raise DiscoverError(f"Discourse latest HTTP {resp.status_code} for {base}")
-            for topic in (resp.json().get("topic_list") or {}).get("topics") or []:
+            for topic in (_safe_json(resp, f"Discourse latest {base}").get("topic_list") or {}).get("topics") or []:
                 if topic.get("id") and topic["id"] not in topic_ids:
                     topic_ids.append(topic["id"])
         records: list[RawRecord] = []
@@ -1641,7 +1633,7 @@ def search_lemmy(
             raise DiscoverError(f"Lemmy search HTTP {resp.status_code} for {base}")
         hits = [SearchHit(url=r.source_uri, title=r.title or "", snippet=r.text[:SNIPPET_CHARS],
                           backend="lemmy")
-                for r in _lemmy_records(resp.json()) if r.source_uri.startswith(("http://", "https://"))]
+                for r in _lemmy_records(_safe_json(resp, f"Lemmy search {base}")) if r.source_uri.startswith(("http://", "https://"))]
         return hits[:max_results]
     finally:
         if close:
@@ -1671,7 +1663,7 @@ def fetch_lemmy(
             raise DiscoverError(f"Lemmy search failed for {base}: {exc}") from exc
         if resp.status_code != 200:
             raise DiscoverError(f"Lemmy search HTTP {resp.status_code} for {base}")
-        return _lemmy_records(resp.json())[:max_results]
+        return _lemmy_records(_safe_json(resp, f"Lemmy search {base}"))[:max_results]
     finally:
         if close:
             client.close()
@@ -2244,10 +2236,10 @@ def run_discovery(
             if not query.strip():
                 skipped.append({"query": query, "reason": "empty query"})
                 continue
-            try:
-                seen_urls: set[str] = set()
-                ordered: list[SearchHit] = []
-                for backend in backends:
+            seen_urls: set[str] = set()
+            ordered: list[SearchHit] = []
+            for backend in backends:
+                try:
                     for hit in _run_backend(backend, query, max_results, searxng_url, client,
                                             reddit_subreddits, se_tagged, se_site,
                                             discourse_url, lemmy_instance):
@@ -2256,9 +2248,8 @@ def run_discovery(
                             continue
                         seen_urls.add(key)
                         ordered.append(hit)
-            except DiscoverError as exc:
-                skipped.append({"query": query, "reason": str(exc)})
-                continue
+                except DiscoverError as exc:
+                    skipped.append({"query": query, "backend": backend, "reason": str(exc)})
             if not ordered:
                 skipped.append({"query": query, "reason": "0 hits from backends"})
             for hit in ordered:

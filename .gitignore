@@ -30,3 +30,4 @@ generate_carousel.py
 *.pdf
 *.sha256
 *.jpg
+.worktrees/

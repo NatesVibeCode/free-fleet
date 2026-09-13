@@ -127,7 +127,7 @@ def _load_input(args: argparse.Namespace) -> list[InputItem]:
 
 
 def _package_version() -> str:
-    for name in ("free-fleet", "bulk-lanes"):
+    for name in ("account-fleet", "free-fleet", "bulk-lanes"):
         try:
             return importlib.metadata.version(name)
         except importlib.metadata.PackageNotFoundError:
@@ -367,7 +367,10 @@ def cmd_test(args: argparse.Namespace) -> None:
     task = _resolve_task(args.task, store)
     items = _load_input(args)
     policy = _extract_policy(args)
-    batch = pack_items(items[: task.batch_size], task.batch_size, task.max_slice_chars)[0]
+    batches = pack_items(items[: task.batch_size], task.batch_size, task.max_slice_chars)
+    if not batches:
+        raise ValueError("input contains no packable items to test")
+    batch = batches[0]
     engine = Engine(task=task, store=store, policy=policy)
     ok, results, receipt, error = engine.execute_batch(batch)
     _emit(
@@ -614,6 +617,10 @@ def cmd_quickstart(args: argparse.Namespace) -> None:
     output = _P(getattr(args, "output", None) or f"runs/{run_id}/clean_packet.json")
 
     # Choose first available example task/input
+    account_example = pkg_root / "resources" / "examples" / "account_research"
+    if (account_example / "task.json").is_file():
+        saas_task = account_example / "task.json"
+        saas_data = account_example / "sample_accounts.csv"
     task_path = saas_task if saas_task.is_file() else None
     input_path = saas_data if saas_data.is_file() else None
     if not task_path or not input_path:
@@ -865,7 +872,7 @@ def cmd_discover(args: argparse.Namespace) -> None:
         discourse_url=getattr(args, "discourse_url", None),
         lemmy_instance=getattr(args, "lemmy_instance", None) or "https://programming.dev",
     )
-    output = _write_discovered(items, getattr(args, "output", None), fmt, f"discovered.{fmt}", report["skipped"])
+    output = _write_discovered(items, getattr(args, "output", None), fmt, f"accounts.{fmt}", report["skipped"])
     skipped = report["skipped"]
     indicator_note = (
         "\nNote: --snippets-only records are triage indicators (evidence=indicator), "
@@ -1251,7 +1258,7 @@ def build_parser() -> argparse.ArgumentParser:
     # Note: --db and --json are also added via _common but we keep explicit for discoverability
     mcp_install.add_argument("--force", action="store_true", help="Overwrite existing free-fleet entry even if identical (no-op otherwise)")
 
-    discover = commands.add_parser("discover", help="Broad web search to items file (mechanical discovery)")
+    discover = commands.add_parser("discover", help="Broad web search to accounts file (mechanical discovery)")
     discover.add_argument("--query", action="append", required=True, help="Search query (repeatable)")
     discover.add_argument("--backend", action="append", choices=sorted(DISCOVER_BACKENDS), help="Search backend (repeatable; default: ddgs + hn)")
     discover.add_argument("--subreddit", action="append", help="Restrict reddit backend to subreddits (repeatable)")
@@ -1266,12 +1273,12 @@ def build_parser() -> argparse.ArgumentParser:
     discover.add_argument("--timeout", type=float, default=20.0, help="HTTP timeout in seconds (default: 20.0)")
     discover.add_argument("--max-chars", type=int, default=None, help="Truncate item text to N chars (default: none)")
     discover.add_argument("--ignore-robots", action="store_true", help="Ignore robots.txt (default: respect it)")
-    discover.add_argument("--js", action="store_true", help="Render JS-heavy pages via Playwright (experimental; needs free-fleet[js])")
-    discover.add_argument("--output", help="Output file (default: discovered.<format>)")
+    discover.add_argument("--js", action="store_true", help="Render JS-heavy pages via Playwright (experimental; needs account-fleet[js])")
+    discover.add_argument("--output", help="Output file (default: accounts.<format>)")
     discover.add_argument("--format", choices=["csv", "jsonl"], default="csv", help="Output format (default: csv)")
     discover.add_argument("--json", action="store_true", help="Emit machine-readable JSON")
 
-    fetch = commands.add_parser("fetch", help="Fetch URLs or ATS boards to items file")
+    fetch = commands.add_parser("fetch", help="Fetch URLs or ATS boards to accounts file")
     fetch.add_argument("--url", action="append", help="URL to fetch and parse (repeatable)")
     fetch.add_argument("--url-file", help="File with one URL per line")
     fetch.add_argument("--sitemap", help="Sitemap URL: fetch every listed page (e.g. https://docs.example.com/sitemap.xml)")
@@ -1300,7 +1307,7 @@ def build_parser() -> argparse.ArgumentParser:
     fetch.add_argument("--yc-query", help="Filter YC companies by keyword")
     fetch.add_argument("--yc-batch", help="Filter YC companies by batch (e.g. W24)")
     fetch.add_argument("--yc-tag", action="append", help="Filter YC companies by tag/industry (repeatable)")
-    fetch.add_argument("--js", action="store_true", help="Render JS-heavy pages via Playwright (experimental; needs free-fleet[js])")
+    fetch.add_argument("--js", action="store_true", help="Render JS-heavy pages via Playwright (experimental; needs account-fleet[js])")
     fetch.add_argument("--max-jobs", type=int, default=None, help="Max items per source: postings per ATS board, pages per sitemap (default 200), companies for --yc, posts for feeds (default: source-specific)")
     fetch.add_argument("--delay", type=float, default=1.0, help="Politeness delay between fetches in seconds (default: 1.0)")
     fetch.add_argument("--timeout", type=float, default=20.0, help="HTTP timeout in seconds (default: 20.0)")

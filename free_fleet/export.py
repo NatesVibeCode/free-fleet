@@ -10,12 +10,12 @@ from .models import CleanPacket, ExtractedItem, ProviderReceipt, RoutePolicy, Ta
 def _evaluate_filter(claims: dict[str, Any], filter_expr: str) -> bool:
     expr = filter_expr.strip()
     op = None
-    for candidate in (">=", "<=", "!=", "=", ">", "<"):
+    for candidate in (">=", "<=", "!=", "==", "=", ">", "<"):
         if candidate in expr:
             op = candidate
             break
     if not op:
-        raise ValueError(f"invalid filter expression '{filter_expr}'; must contain =, !=, >=, <=, >, or <")
+        raise ValueError(f"invalid filter expression '{filter_expr}'; must contain ==, =, !=, >=, <=, >, or <")
 
     key, val_str = [p.strip() for p in expr.split(op, 1)]
     val_str = val_str.strip("'\"")
@@ -25,6 +25,8 @@ def _evaluate_filter(claims: dict[str, Any], filter_expr: str) -> bool:
 
     if val_str.lower() in ("true", "false"):
         expected: Any = (val_str.lower() == "true")
+    elif val_str.lower() in ("null", "none"):
+        expected = None
     else:
         try:
             if "." in val_str:
@@ -35,9 +37,17 @@ def _evaluate_filter(claims: dict[str, Any], filter_expr: str) -> bool:
             expected = val_str
 
     try:
-        if op == "=":
+        if op in ("=", "=="):
+            if expected is None:
+                return actual is None
+            if actual is None:
+                return False
             return actual == expected or str(actual).lower() == str(expected).lower()
         elif op == "!=":
+            if expected is None:
+                return actual is not None
+            if actual is None:
+                return True
             return actual != expected and str(actual).lower() != str(expected).lower()
         elif op == ">=":
             return float(actual) >= float(expected)
@@ -161,13 +171,16 @@ def export_clean_csv(
         item_route_map=item_route_map,
     )
 
-    # Determine all unique claim keys
+    # Determine all unique claim keys, excluding reserved standard column headers
+    reserved_headers = {"item_id", "primary_quote_text", "quote_count", "source_uri", "source_digest"}
+    if rank:
+        reserved_headers.add("rank")
     claim_keys: list[str] = []
     if task.claims_schema and "properties" in task.claims_schema:
-        claim_keys = list(task.claims_schema["properties"].keys())
+        claim_keys = [k for k in task.claims_schema["properties"].keys() if k not in reserved_headers]
     for rec in verified_records:
         for k in rec.claims.keys():
-            if k not in claim_keys:
+            if k not in claim_keys and k not in reserved_headers:
                 claim_keys.append(k)
 
     fieldnames = []

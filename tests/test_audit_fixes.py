@@ -367,3 +367,209 @@ def test_crawl_site_link_extraction_with_render_js(monkeypatch):
     sources = [r.source_uri for r in records]
     assert "https://example.com" in sources
 
+
+def test_evaluate_filter_double_equals_and_null():
+    from free_fleet.export import _evaluate_filter
+
+    assert _evaluate_filter({"fit_tier": "tier_1"}, "fit_tier == tier_1") is True
+    assert _evaluate_filter({"fit_tier": "tier_2"}, "fit_tier == tier_1") is False
+    assert _evaluate_filter({"score": 100}, "score == 100") is True
+    assert _evaluate_filter({"score": 90}, "score == 100") is False
+    assert _evaluate_filter({"score": 100}, "score = 100") is True
+    assert _evaluate_filter({"val": None}, "val == null") is True
+    assert _evaluate_filter({"val": None}, "val = none") is True
+    assert _evaluate_filter({"val": "present"}, "val != null") is True
+    assert _evaluate_filter({"val": None}, "val != null") is False
+
+
+def test_export_csv_reserved_column_collision(tmp_path: Path):
+    from free_fleet.export import export_clean_csv
+    from free_fleet.models import TaskSpec
+    import csv
+
+    task = TaskSpec(
+        name="test-reserved",
+        claims_schema={
+            "type": "object",
+            "properties": {
+                "item_id": {"type": "string"},
+                "source_uri": {"type": "string"},
+                "score": {"type": "integer"},
+            },
+            "required": ["item_id", "source_uri", "score"],
+            "additionalProperties": False,
+        },
+    )
+    run_data = {
+        "run_id": "r1",
+        "task": task.model_dump(mode="json", by_alias=True),
+        "task_revision": "rev1",
+        "input_digest": "d" * 64,
+        "batches": {
+            "b1": {
+                "status": "verified",
+                "result": [{
+                    "item_id": "rec-1",
+                    "source_uri": "https://example.com/1",
+                    "source_digest": "a" * 64,
+                    "content_type": "text/plain",
+                    "claims": {"item_id": "inner_id", "source_uri": "inner_uri", "score": 95},
+                    "quotes": [{"slice_id": "full", "start": 0, "end": 10, "text": "0123456789"}],
+                }],
+            }
+        },
+    }
+    csv_path = tmp_path / "out.csv"
+    export_clean_csv(run_data, csv_path, rank=True)
+    with open(csv_path, mode="r", encoding="utf-8") as f:
+        reader = csv.reader(f)
+        header = next(reader)
+    # Ensure no duplicates in header
+    assert len(header) == len(set(header))
+    assert header.count("item_id") == 1
+    assert header.count("source_uri") == 1
+
+
+def test_cmd_test_empty_input_error(tmp_path: Path):
+    from free_fleet.cli import cmd_test
+    from free_fleet.store import FreeFleetStore
+    from free_fleet.models import TaskSpec
+    import argparse
+
+    db_path = tmp_path / "test.db"
+    store = FreeFleetStore(db_path)
+    task = TaskSpec(
+        name="test-task",
+        instructions="do things",
+        claims_schema={"type": "object", "properties": {"a": {"type": "string"}}, "required": ["a"], "additionalProperties": False},
+    )
+    store.register_task(task)
+
+    empty_csv = tmp_path / "empty.csv"
+    empty_csv.write_text("item_id,text\n")
+
+    args = argparse.Namespace(
+        task="test-task",
+        input=str(empty_csv),
+        workspace_root=str(tmp_path),
+        db=str(db_path),
+        json=False,
+    )
+    with pytest.raises(ValueError, match="input contains no"):
+        cmd_test(args)
+
+
+def test_run_discovery_multi_backend_isolation(monkeypatch):
+    from free_fleet.discover import run_discovery, SearchHit, DiscoverError
+
+    def fake_run_backend(backend, query, max_results, searxng_url, client, *args, **kwargs):
+        if backend == "ddgs":
+            return [SearchHit(url="https://example.com/from-ddgs", title="Hit 1", snippet="snip", backend="ddgs")]
+        elif backend == "hn":
+            raise DiscoverError("HN rate limit 429")
+        return []
+
+    monkeypatch.setattr("free_fleet.discover._run_backend", fake_run_backend)
+    monkeypatch.setattr("free_fleet.discover.fetch_smart_url", lambda url, *args, **kwargs: None)
+    monkeypatch.setattr("free_fleet.discover.to_input_items", lambda records, *args, **kwargs: [InputItem(item_id="1", text=r.text, source_uri=r.source_uri) for r in records])
+
+    items, report = run_discovery(
+        queries=["test query"],
+        backends=["ddgs", "hn"],
+        fetch_full_text=False,
+    )
+    # The hit from ddgs must be preserved even though hn failed
+    assert len(items) == 1
+    assert items[0].source_uri == "https://example.com/from-ddgs"
+    # The failed backend is logged in skipped
+    assert any(s.get("backend") == "hn" and "429" in s.get("reason", "") for s in report["skipped"])
+
+
+def test_safe_json_in_discourse_and_lemmy(monkeypatch):
+    from free_fleet.discover import search_lemmy, fetch_lemmy, fetch_discourse_search, DiscoverError
+    import httpx
+
+    fake_html_resp = httpx.Response(200, text="<html>Nginx 502 Bad Gateway</html>")
+
+    class FakeClient:
+        def get(self, *args, **kwargs):
+            return fake_html_resp
+        def close(self):
+            pass
+
+    client = FakeClient()
+    with pytest.raises(DiscoverError, match="invalid JSON response"):
+        search_lemmy("query", client=client)
+
+    with pytest.raises(DiscoverError, match="invalid JSON response"):
+        fetch_lemmy("query", client=client)
+
+    with pytest.raises(DiscoverError, match="invalid JSON response"):
+        fetch_discourse_search("https://meta.discourse.org", query="search", client=client)
+
+
+def test_input_data_invalid_explicit_columns(tmp_path: Path):
+    from free_fleet.input_data import load_input_items, InputDataError
+
+    csv_file = tmp_path / "data.csv"
+    csv_file.write_text("item_id,text,heading,link\n1,some text,My Heading,https://example.com\n")
+
+    # Valid explicit columns
+    items = load_input_items(csv_file, title_column="heading", uri_column="link")
+    assert items[0].title == "My Heading"
+    assert items[0].source_uri == "https://example.com"
+
+    # Non-existent title_column raises InputDataError
+    with pytest.raises(InputDataError, match="Specified title column 'bad_title' not found"):
+        load_input_items(csv_file, title_column="bad_title")
+
+    # Non-existent uri_column raises InputDataError
+    with pytest.raises(InputDataError, match="Specified uri column 'bad_uri' not found"):
+        load_input_items(csv_file, uri_column="bad_uri")
+
+
+def test_opencode_timeout_classification():
+    import subprocess
+    from free_fleet.providers.opencode import OpenCodeProvider
+
+    class TimeoutRunner:
+        def run(self, task_config, args, timeout_sec):
+            raise subprocess.TimeoutExpired(cmd=["opencode"], timeout=timeout_sec)
+
+    prov = OpenCodeProvider(runner=TimeoutRunner())
+    ok, text, receipt = prov.run_prompt("opencode/test-model", "test prompt", timeout_sec=5)
+    assert ok is False
+    assert text is None
+    assert receipt["error_type"] == "timeout"
+
+
+def test_fetch_hn_thread_comment_support(monkeypatch):
+    from free_fleet.discover import fetch_hn_thread
+
+    def fake_hn_item(item_id, client, timeout):
+        if item_id == "99999":
+            return {
+                "id": 99999,
+                "type": "comment",
+                "by": "commenter1",
+                "text": "This is a great discussion comment.",
+                "kids": [99998],
+            }
+        elif item_id == "99998":
+            return {
+                "id": 99998,
+                "type": "comment",
+                "by": "commenter2",
+                "text": "I agree with you.",
+                "kids": [],
+            }
+        return None
+
+    monkeypatch.setattr("free_fleet.discover._hn_item", fake_hn_item)
+
+    rec = fetch_hn_thread("99999")
+    assert "great discussion comment" in rec.text
+    assert "I agree with you" in rec.text
+    assert "HN" in rec.title
+
+

@@ -21,6 +21,9 @@ pip install -e ".[dev]"
 
 # Run test suite
 pytest -v
+
+# Check the shared free-fleet contract across the local sibling checkouts
+python3 scripts/check_fleet_drift.py
 ```
 
 Do not include credentials, customer data, provider responses containing private data, or local machine paths in issues, fixtures, commits, or receipts.

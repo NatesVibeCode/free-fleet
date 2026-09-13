@@ -184,13 +184,12 @@ def rank_with_scores(
 
         if policy:
             if getattr(policy, "free_only", False):
+                declared_costs = (r.get("cost_per_1k_input"), r.get("cost_per_1k_output"))
                 is_zero = (
-                    r.get("price_state") == "price_observed_zero"
-                    or (
-                        r.get("cost_per_1k_input") == 0.0
-                        and r.get("cost_per_1k_output") == 0.0
-                        and r.get("cost_per_1k_input") is not None
-                        and r.get("cost_per_1k_output") is not None
+                    not any(cost is not None and cost != 0.0 for cost in declared_costs)
+                    and (
+                        r.get("price_state") == "price_observed_zero"
+                        or all(cost is not None and cost == 0.0 for cost in declared_costs)
                     )
                 )
                 if not is_zero:

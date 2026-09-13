@@ -238,6 +238,8 @@ You can pass `--openrouter-providers` as a comma-separated list or as repeatable
 free-fleet resume <run_id>
 ```
 
+Free routes are used by default. A paid route approved in an earlier session must be requested again with `--route <route-id>`.
+
 - **Resumable**: Batches are committed upon verification. Completed work is never repeated.
 - **Fault-Tolerant**: Stale worker leases are automatically recovered after timeout.
 - **Concurrent**: Multiple worker processes can safely lease batches simultaneously without collisions.

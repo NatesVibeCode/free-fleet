@@ -829,3 +829,47 @@ def test_export_clean_csv_invalid_batch_shape(tmp_path: Path):
     }
     with pytest.raises(ValueError, match="verified batch result has an invalid shape"):
         export_clean_csv(run_data, tmp_path / "out.csv")
+
+
+def test_demo_provider_trailing_garbage_json_recovery():
+    from free_fleet.providers.demo import DemoProvider
+    demo = DemoProvider()
+    prompt = 'instructions here\n{"input_items": [{"item_id": "i1", "sections": [{"slice_id": "full", "text": "deterministic text for verification"}]}], "output_schema": {"properties": {"items": {"items": {"properties": {"claims": {"type": "object", "properties": {"status": {"type": "string"}}}}}}}}}\nSome extra trailing garbage text'
+    ok, resp, receipt = demo.run_prompt("demo", prompt)
+    assert ok is True
+    assert receipt["status"] == "complete"
+    assert "i1" in resp
+
+
+def test_demo_provider_short_slice_quote_min_chars():
+    from free_fleet.providers.demo import DemoProvider
+    demo = DemoProvider()
+    prompt = 'instructions\n{"input_items": [{"item_id": "i1", "sections": [{"slice_id": "full", "text": "tiny"}]}], "output_schema": {"properties": {"items": {"items": {"properties": {"claims": {"type": "object", "properties": {"val": {"type": "string"}}}}}}}}}'
+    ok, resp, receipt = demo.run_prompt("demo", prompt)
+    assert ok is True
+    data = json.loads(resp)
+    quote = data["items"][0]["quotes"][0]["text"]
+    assert len(quote) >= 15
+
+
+def test_demo_provider_nested_object_properties():
+    from free_fleet.providers.demo import _value_for_spec
+    spec = {
+        "type": "object",
+        "properties": {
+            "name": {"type": "string"},
+            "count": {"type": "integer"},
+        },
+    }
+    val = _value_for_spec(spec)
+    assert isinstance(val, dict)
+    assert "name" in val
+    assert "count" in val
+    assert val["count"] == 0
+
+
+def test_session_pool_empty_routes_raises():
+    from free_fleet.sessions import SessionPool
+    with pytest.raises(ValueError, match="SessionPool requires at least one route"):
+        SessionPool(num_sessions=2, routes=[])
+

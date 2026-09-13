@@ -110,6 +110,9 @@ def setup_workspace(
         raise ValueError("setup database must stay below the workspace root")
 
     actions = [_install_skill(bundled_skill_path(), destination, dry_run=dry_run, force=force)]
+    account_source = Path(__file__).resolve().parent / "resources" / "account_skill"
+    if account_source.is_dir():
+        actions.append(_install_skill(account_source, destination.parent / "account-fleet", dry_run=dry_run, force=force))
     refresh_result: dict[str, int | str] | None = None
     if dry_run:
         actions.append(SetupAction(kind="database", status="planned", path=str(database)))

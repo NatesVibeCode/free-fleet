@@ -573,3 +573,157 @@ def test_fetch_hn_thread_comment_support(monkeypatch):
     assert "HN" in rec.title
 
 
+def test_openrouter_refresh_pricing_resilience(monkeypatch, tmp_path):
+    from free_fleet.catalog import RouteCatalog
+    import httpx
+
+    fake_models_resp = {
+        "data": [
+            {
+                "id": "vendor/free-model-1",
+                # Pricing with null prompt
+                "pricing": {"prompt": None, "input": 0.0, "completion": 0.0, "output": 0.0},
+            },
+            {
+                "id": "vendor/free-model-2",
+                # Cost key instead of pricing
+                "cost": {"prompt": 0.0, "completion": 0.0},
+            },
+            {
+                "id": "vendor/free-model-3",
+                # Missing pricing entirely
+            },
+        ]
+    }
+
+    class FakeClient:
+        def __init__(self, *args, **kwargs):
+            pass
+        def __enter__(self):
+            return self
+        def __exit__(self, *args):
+            pass
+        def get(self, url, **kwargs):
+            return httpx.Response(200, json=fake_models_resp)
+
+    monkeypatch.setattr("httpx.Client", FakeClient)
+
+    catalog = RouteCatalog(db_path=tmp_path / "test.db")
+    discovered = catalog.refresh_from_openrouter()
+    assert discovered >= 1
+
+
+def test_pack_items_invalid_batch_size():
+    from free_fleet.packer import pack_items
+
+    with pytest.raises(ValueError, match="batch_size must be greater than 0"):
+        pack_items([], batch_size=0)
+    with pytest.raises(ValueError, match="batch_size must be greater than 0"):
+        pack_items([], batch_size=-1)
+
+
+def test_slicer_min_width():
+    from free_fleet.slicer import slice_document
+
+    slices = slice_document("abcdefghij", max_chars=2)
+    assert len(slices) == 3
+    for s in slices:
+        assert len(s["text"]) >= 1
+
+
+def test_safe_json_in_all_discovery_backends():
+    from free_fleet.discover import search_searxng, search_hn, _yc_get_page, _se_get, DiscoverError
+    import httpx
+
+    fake_html_resp = httpx.Response(200, text="<html>502 Bad Gateway</html>")
+
+    class FakeClient:
+        def get(self, *args, **kwargs):
+            return fake_html_resp
+        def close(self):
+            pass
+
+    client = FakeClient()
+    with pytest.raises(DiscoverError, match="invalid JSON response"):
+        search_searxng("test", base_url="https://searx.example", client=client)
+
+    with pytest.raises(DiscoverError, match="invalid JSON response"):
+        search_hn("test", client=client)
+
+    with pytest.raises(DiscoverError, match="invalid JSON response"):
+        _yc_get_page(1, client=client)
+
+    with pytest.raises(DiscoverError, match="invalid JSON response"):
+        _se_get("/questions", {}, timeout=20.0, client=client)
+
+
+def test_null_content_in_providers(monkeypatch):
+    from free_fleet.providers.openai_compatible import OpenAICompatibleProvider
+    from free_fleet.providers.openrouter import OpenRouterProvider
+    import httpx
+
+    payload_null_content = {
+        "choices": [{"message": {"role": "assistant", "content": None}}],
+        "usage": {"total_tokens": 10},
+    }
+
+    class FakeClient:
+        def __init__(self, *args, **kwargs):
+            pass
+        def __enter__(self):
+            return self
+        def __exit__(self, *args):
+            pass
+        def post(self, *args, **kwargs):
+            return httpx.Response(200, json=payload_null_content)
+
+    monkeypatch.setattr("httpx.Client", FakeClient)
+
+    prov1 = OpenAICompatibleProvider(base_url="http://localhost:11434/v1", is_free=True)
+    ok1, text1, r1 = prov1.run_prompt("test-route", "prompt")
+    assert ok1 is True
+    assert text1 == ""
+
+    prov2 = OpenRouterProvider(api_key="test-key")
+    ok2, text2, r2 = prov2.run_prompt("test-route", "prompt")
+    assert ok2 is True
+    assert text2 == ""
+
+
+def test_resume_campaign_fallback_output_path(tmp_path):
+    from free_fleet.engine import Engine
+    from free_fleet.task import create_task_from_preset
+    from free_fleet.store import FreeFleetStore
+    from free_fleet.models import InputItem, RoutePolicy
+
+    store = FreeFleetStore(tmp_path / "test.db")
+    task = create_task_from_preset("test_task")
+    store.register_task(task)
+
+    policy = RoutePolicy(allowed_routes=["demo/fake"], free_only=True)
+    engine = Engine(task=task, store=store, policy=policy)
+    engine.catalog.add_route(
+        route_id="demo/fake",
+        provider="demo",
+        cost_per_1k_input=0.0,
+        cost_per_1k_output=0.0,
+        enabled=True,
+        price_state="price_observed_zero",
+    )
+    items = [InputItem(item_id="i1", text="Sample test text verification fact here.")]
+    packet = engine.run_campaign(
+        raw_items=items,
+        run_id="run_fallback_test",
+        input_path=str(tmp_path / "input.json"),
+        concurrency=1,
+        policy=policy,
+    )
+    # Manually clear output_path in runs table to simulate legacy / null row
+    with store.connect() as conn:
+        conn.execute("UPDATE runs SET output_path = NULL WHERE run_id = 'run_fallback_test'")
+
+    resumed_packet = engine.resume_campaign(run_id="run_fallback_test")
+    assert resumed_packet["run_id"] == "run_fallback_test"
+
+
+

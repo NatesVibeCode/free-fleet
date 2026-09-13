@@ -79,7 +79,7 @@ class RouteCatalog:
         """Import packaged route hints without treating bundled history as local evidence."""
         if not self.config_path.exists():
             return
-        data = json.loads(self.config_path.read_text())
+        data = json.loads(self.config_path.read_text(encoding="utf-8"))
         for raw_route in data.get("routes", []):
             route = dict(raw_route)
             hinted_zero = (
@@ -489,14 +489,17 @@ class RouteCatalog:
                 raw_id = m.get("id", "")
                 route_id = f"openrouter/{raw_id}" if not raw_id.startswith("openrouter/") else raw_id
                 
+                pricing = m.get("pricing") or m.get("cost") or {}
+                prompt_cost = pricing.get("prompt") if pricing.get("prompt") is not None else (pricing.get("input") or 0.0)
+                comp_cost = pricing.get("completion") if pricing.get("completion") is not None else (pricing.get("output") or 0.0)
+
                 if route_id in known:
                     r = known[route_id]
                     r["price_state"] = price_state.value
                     r["enabled"] = price_state is PriceState.PRICE_OBSERVED_ZERO
-                    pricing = m.get("pricing", {})
                     if price_state is PriceState.PRICE_OBSERVED_ZERO:
-                        r["cost_per_1k_input"] = float(pricing.get("prompt", pricing.get("input", 0))) * 1000
-                        r["cost_per_1k_output"] = float(pricing.get("completion", pricing.get("output", 0))) * 1000
+                        r["cost_per_1k_input"] = float(prompt_cost) * 1000
+                        r["cost_per_1k_output"] = float(comp_cost) * 1000
                     else:
                         r.pop("cost_per_1k_input", None)
                         r.pop("cost_per_1k_output", None)
@@ -513,9 +516,8 @@ class RouteCatalog:
                         "verification_source": "openrouter /api/v1/models pricing"
                     }
                     if price_state is PriceState.PRICE_OBSERVED_ZERO:
-                        pricing = m["pricing"]
-                        route["cost_per_1k_input"] = float(pricing.get("prompt", pricing.get("input", 0))) * 1000
-                        route["cost_per_1k_output"] = float(pricing.get("completion", pricing.get("output", 0))) * 1000
+                        route["cost_per_1k_input"] = float(prompt_cost) * 1000
+                        route["cost_per_1k_output"] = float(comp_cost) * 1000
                     self.data["routes"].append(route)
                 discovered_count += 1
 

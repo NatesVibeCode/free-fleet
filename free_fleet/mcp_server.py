@@ -57,15 +57,19 @@ class Workspace:
 
 def create_mcp_server(workspace_root: str | Path, db_path: str | Path | None = None) -> FastMCP:
     workspace = Workspace(workspace_root)
-    resolved_db = workspace.path(str(db_path)) if db_path else workspace.path("free-fleet.db")
+    configured_db = db_path or os.environ.get("ACCOUNT_FLEET_DB") or os.environ.get("FREE_FLEET_DB")
+    resolved_db = workspace.path(str(configured_db)) if configured_db else workspace.path("free-fleet.db")
     store = FreeFleetStore(resolved_db)
 
     def resolve_task(reference: str) -> TaskSpec:
-        candidate = workspace.path(reference)
-        if candidate.is_file():
-            task = load_task_spec(candidate)
-            store.register_task(task)
-            return task
+        try:
+            candidate = workspace.path(reference)
+            if candidate.is_file():
+                task = load_task_spec(candidate)
+                store.register_task(task)
+                return task
+        except Exception:
+            pass
         return store.get_task(reference)
 
     server = FastMCP(
@@ -206,7 +210,8 @@ def create_mcp_server(workspace_root: str | Path, db_path: str | Path | None = N
         """Resume pending batches from an existing run without rereading source files."""
         task_spec = store.get_run_task(run_id)
         snapshot = store.run_snapshot(run_id)
-        packet_path = workspace.path(output_packet) if output_packet else workspace.path(snapshot["output_path"])
+        raw_out = snapshot.get("output_path")
+        packet_path = workspace.path(output_packet) if output_packet else (workspace.path(raw_out) if raw_out else workspace.path(f"runs/{run_id}/clean_packet.json"))
         packet = Engine(task=task_spec, store=store).resume_campaign(run_id, sessions, packet_path)
         return CleanPacket.model_validate(packet)
 

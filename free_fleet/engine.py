@@ -419,7 +419,8 @@ class Engine:
         self.store.save_sessions(run_id, session_pool.to_dict())
         self.store.finalize_run(run_id)
         snapshot = self.store.run_snapshot(run_id)
-        export_path = output_packet_path or Path(snapshot["output_path"])
+        raw_out = snapshot.get("output_path")
+        export_path = output_packet_path or (Path(raw_out) if raw_out else Path("runs") / run_id / "clean_packet.json")
         packet = export_clean_packet(snapshot, export_path)
         
         return packet

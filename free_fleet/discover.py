@@ -194,12 +194,7 @@ def search_searxng(
         for page in range(1, max_pages + 1):
             params = {"q": query, "format": "json", "language": "en", "pageno": page}
             resp = client.get(f"{base}/search", params=params)
-            if resp.status_code != 200:
-                raise DiscoverError(f"SearXNG returned HTTP {resp.status_code} for {query!r}")
-            try:
-                payload = resp.json()
-            except Exception as exc:
-                raise DiscoverError(f"SearXNG returned non-JSON for {query!r}") from exc
+            payload = _safe_json(resp, f"SearXNG search for {query!r}")
             page_rows = payload.get("results") or []
             if not page_rows:
                 break
@@ -238,10 +233,9 @@ def search_hn(
         close = True
     try:
         resp = client.get(HN_API, params={"query": query, "hitsPerPage": max_results})
-        if resp.status_code != 200:
-            raise DiscoverError(f"HN search returned HTTP {resp.status_code} for {query!r}")
+        payload = _safe_json(resp, f"HN search for {query!r}")
         hits: list[SearchHit] = []
-        for row in (resp.json().get("hits") or [])[:max_results]:
+        for row in (payload.get("hits") or [])[:max_results]:
             url = (row.get("url") or "").strip() or f"https://news.ycombinator.com/item?id={row.get('objectID')}"
             snippet = (row.get("story_text") or row.get("comment_text") or row.get("title") or "")
             hits.append(SearchHit(
@@ -273,12 +267,7 @@ def _yc_get_page(
         resp = client.get(YC_API, params={"page": page}, timeout=timeout)
     except Exception as exc:
         raise DiscoverError(f"YC directory fetch failed (page {page}): {exc}") from exc
-    if resp.status_code != 200:
-        raise DiscoverError(f"YC directory returned HTTP {resp.status_code}")
-    try:
-        payload = resp.json()
-    except Exception as exc:
-        raise DiscoverError("YC directory returned non-JSON") from exc
+    payload = _safe_json(resp, f"YC directory page {page}")
     return payload.get("companies") or [], int(payload.get("totalPages") or 1)
 
 
@@ -1238,12 +1227,7 @@ def _se_get(
         resp = client.get(f"{SE_API}{path}", params=params, timeout=timeout)
     except Exception as exc:
         raise DiscoverError(f"Stack Exchange request failed: {exc}") from exc
-    if resp.status_code != 200:
-        raise DiscoverError(f"Stack Exchange HTTP {resp.status_code} ({resp.text[:150]})")
-    try:
-        payload = resp.json()
-    except Exception as exc:
-        raise DiscoverError("Stack Exchange returned non-JSON") from exc
+    payload = _safe_json(resp, f"Stack Exchange {path}")
     if "error_id" in payload:
         raise DiscoverError(f"Stack Exchange error {payload.get('error_id')}: {payload.get('error_message')}")
     LAST_SE_QUOTA.update(quota_remaining=payload.get("quota_remaining"), quota_max=payload.get("quota_max"))

@@ -72,6 +72,35 @@ ACCOUNT_HALF_LIVES = {
     "hiring_or_trigger": 21.0,
     "firmographic_fit": 365.0,
 }
+PARTNER_CHECKLIST = {
+    "q1_target_stack": 20,
+    "q2_service_model": 20,
+    "q3_industry_verticals": 15,
+    "q4_geography_delivery": 15,
+    "q5_vendor_alliances": 15,
+    "q6_case_study_proof": 15,
+}
+PARTNER_CHECKLIST_DESCRIPTIONS = {
+    "q1_target_stack": "True only when source evidence verifies active delivery capability in the target or adjacent tech stack.",
+    "q2_service_model": "True only when source evidence confirms turnkey systems integration, migration, or architecture practice (false for pure SaaS vendors or hourly staff aug).",
+    "q3_industry_verticals": "True only when source evidence confirms client delivery experience in specific industry verticals.",
+    "q4_geography_delivery": "True only when source evidence confirms physical headquarters and engineering delivery locations.",
+    "q5_vendor_alliances": "True only when source evidence confirms certified partner tiers with adjacent vendors (e.g. AWS Premier, Snowflake Elite).",
+    "q6_case_study_proof": "True only when source evidence verifies a concrete project outcome, transformation metric, or client case study.",
+}
+PARTNER_EVIDENCE_TERMS = [
+    "partner", "consulting", "implementation", "client", "integrat", "migration",
+    "solutions architect", "practice", "deployment", "certified", "managed service",
+    "case study", "delivery", "professional services", "enterprise", "vertical", "headquarters",
+]
+PARTNER_HALF_LIVES = {
+    "q1_target_stack": 180.0,
+    "q2_service_model": 365.0,
+    "q3_industry_verticals": 365.0,
+    "q4_geography_delivery": 365.0,
+    "q5_vendor_alliances": 180.0,
+    "q6_case_study_proof": 180.0,
+}
 
 PRESETS: dict[str, dict[str, Any]] = {
     "summarize": {
@@ -181,6 +210,72 @@ PRESETS: dict[str, dict[str, Any]] = {
             },
         },
         "required": ["checklist", "identified_gap", "reasoning"],
+    },
+    "partner-research": {
+        "instructions": "Evaluate potential implementation partner fit by answering the 6-question gatekeeper checklist, identify the verified partner practice, and cite verbatim evidence from the multi-source dossier. The pipeline computes the completeness score and tier.",
+        "checklist": PARTNER_CHECKLIST,
+        "evidence_terms": PARTNER_EVIDENCE_TERMS,
+        "recency_half_lives": PARTNER_HALF_LIVES,
+        "properties": {
+            "checklist": _checklist_property(PARTNER_CHECKLIST, PARTNER_CHECKLIST_DESCRIPTIONS),
+            "score": _computed_score_property(
+                "Partner fit: 85-100 all 6 questions answered with multi-source proof (Tier 1), 70-84 at least 5 questions answered (Tier 2), 50-69 partial fit (Tier 3), 0-49 missing key criteria, staff-aug only, or SaaS vendor."
+            ),
+            "identified_practice": {
+                "type": "string",
+                "description": "The verified partner practice, capability, or core service offering, named exactly as the source names it.",
+            },
+            "answers": {
+                "type": "object",
+                "description": "Structured answers to the gatekeeper questions, supported by cited quotes.",
+                "properties": {
+                    "target_stack": {
+                        "type": "array",
+                        "items": {"type": "string"},
+                        "description": "Verified technologies and platforms implemented for clients.",
+                    },
+                    "service_model": {
+                        "type": "string",
+                        "enum": ["turnkey_si", "migration_modernization", "managed_services", "staff_aug_only", "saas_vendor", "unknown"],
+                        "description": "Primary client delivery model.",
+                    },
+                    "industry_verticals": {
+                        "type": "array",
+                        "items": {"type": "string"},
+                        "description": "Client industry verticals with verified delivery proof.",
+                    },
+                    "geography_delivery": {
+                        "type": "string",
+                        "description": "Physical headquarters and delivery locations.",
+                    },
+                    "vendor_alliances": {
+                        "type": "array",
+                        "items": {"type": "string"},
+                        "description": "Certified partner tiers and technology vendor badges.",
+                    },
+                    "case_study_outcome": {
+                        "type": "string",
+                        "description": "Specific project outcome or transformation metric achieved for a client.",
+                    },
+                },
+                "required": ["target_stack", "service_model", "industry_verticals", "geography_delivery", "vendor_alliances", "case_study_outcome"],
+                "additionalProperties": False,
+            },
+            "source_diversity_count": {
+                "type": "integer",
+                "minimum": 0,
+                "description": "Number of distinct source categories (First-Party, Vendor Registry, Review Audit, Community, ATS) cited in the supporting quotes.",
+            },
+            "fit_tier": {
+                "enum": ["tier_1", "tier_2", "tier_3", "unfit"],
+                "description": "Score band, derived by the pipeline: tier_1 85-100, tier_2 70-84, tier_3 50-69, unfit below 50. Omit it.",
+            },
+            "reasoning": {
+                "type": "string",
+                "description": "Short explanation grounded in the cited quotes, naming the multi-source evidence behind the checklist and answers.",
+            },
+        },
+        "required": ["checklist", "identified_practice", "reasoning"],
     },
 }
 

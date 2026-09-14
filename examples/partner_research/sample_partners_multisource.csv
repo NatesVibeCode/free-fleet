@@ -1,0 +1,39 @@
+item_id,text,source_uri,source_count,source_categories
+pixelcraft.com,"# Multi-Source Evidence Dossier: pixelcraft.com
+
+=== SECTION: B2B_DIRECTORY_AUDIT (URI: https://clutch.co/profile/pixelcraft) ===
+Clutch verified review: PixelCraft designed our brand identity and built our e-commerce catalog in Shopify. Min project size: $10,000. Focus: 60% UI/UX Design, 40% Web Development.",https://clutch.co/profile/pixelcraft,1,b2b_directory_audit
+pixelcraft.io,"# Multi-Source Evidence Dossier: pixelcraft.io
+
+=== SECTION: FIRST_PARTY_PRACTICE (URI: https://pixelcraft.io/services) ===
+PixelCraft is a creative design studio and web development agency. We build Shopify storefronts, WordPress blogs, and mobile user interfaces for consumer retail brands.",https://pixelcraft.io/services,1,first_party_practice
+slalom.com,"# Multi-Source Evidence Dossier: slalom.com
+
+=== SECTION: FIRST_PARTY_PRACTICE (URI: https://www.slalom.com/services/cloud-data) ===
+Slalom delivers modern cloud data architecture, systems integration, and migration services. Headquarters: Seattle, WA, with 45 offices across North America, Europe, and Asia-Pacific. We specialize in Fortune 500 financial services and healthcare clients.
+
+=== SECTION: VENDOR_REGISTRY (URI: https://snowflake.com/partners/services/slalom) ===
+Slalom is an audited Snowflake Elite Services Partner with over 150 SnowPro Core and Advanced certified architects. Validated in Financial Services and Healthcare specializations.
+
+=== SECTION: FIRST_PARTY_CASE_STUDY (URI: https://www.slalom.com/case-studies/fintech-streaming) ===
+Case Study: Modernizing a global fintech payment platform with Snowflake and Apache Kafka. Cut query latency by 80% and reduced monthly infrastructure spend by $1.2M with zero cutover downtime.
+
+=== SECTION: ATS_REQUISITIONS (URI: https://jobs.ashbyhq.com/slalom/lead-cloud-architect) ===
+Hiring 12 Enterprise Solutions Architects to lead turnkey cloud data modernization and streaming deployments for our enterprise clients.",https://www.slalom.com/services/cloud-data,4,"ats_requisitions,first_party_case_study,first_party_practice,vendor_registry"
+stripe.com,"# Multi-Source Evidence Dossier: stripe.com
+
+=== SECTION: FIRST_PARTY_PRACTICE (URI: https://stripe.com/about) ===
+Stripe is a financial infrastructure platform for businesses. Millions of companies use our payment APIs and billing software to accept payments online. We are a software technology product provider.",https://stripe.com/about,1,first_party_practice
+trace3.com,"# Multi-Source Evidence Dossier: trace3.com
+
+=== SECTION: FIRST_PARTY_PRACTICE (URI: https://trace3.com/services/cloud-intelligence) ===
+Trace3 is an advanced systems integrator providing enterprise infrastructure advisory, cloud migration, and data engineering services. Headquarters in Irvine, CA with onshore US delivery teams.
+
+=== SECTION: VENDOR_REGISTRY (URI: https://partners.amazonaws.com/partners/trace3) ===
+AWS Premier Tier Services Partner holding validated Migration Competency, Financial Services Competency, and DevOps Competency.
+
+=== SECTION: FIRST_PARTY_CASE_STUDY (URI: https://trace3.com/case-studies/kafka-cluster) ===
+Case Study: Leading the enterprise Apache Kafka streaming infrastructure deployment and multi-region Kubernetes migration for a top-10 financial services customer, processing 5 billion events daily.
+
+=== SECTION: ATS_REQUISITIONS (URI: https://boards.greenhouse.io/trace3/solutions-architect) ===
+Seeking Principal Solutions Architects to design distributed streaming platforms and multi-region Kubernetes architectures for banking clients.",https://trace3.com/services/cloud-intelligence,4,"ats_requisitions,first_party_case_study,first_party_practice,vendor_registry"

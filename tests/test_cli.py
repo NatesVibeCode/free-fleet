@@ -67,6 +67,7 @@ def test_presets_cover_each_named_bulk_job():
         "classify",
         "extract",
         "filter",
+        "partner-research",
         "score",
         "summarize",
         "triage",

@@ -4,8 +4,11 @@ from __future__ import annotations
 import csv
 from pathlib import Path
 
-import pytest
-
+from harness_fleet.bundler import (
+    bundle_records,
+    canonicalize_entity_id,
+    classify_source_category,
+)
 from harness_fleet.input_data import load_input_items
 from harness_fleet.partner import IdealPartnerProfile
 from harness_fleet.profile import IdealCompanyProfile
@@ -16,13 +19,6 @@ from harness_fleet.task import (
     PARTNER_HALF_LIVES,
     PRESETS,
     create_task_from_preset,
-)
-
-
-from harness_fleet.bundler import (
-    bundle_records,
-    canonicalize_entity_id,
-    classify_source_category,
 )
 
 

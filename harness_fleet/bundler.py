@@ -7,7 +7,6 @@ into consolidated, section-tagged composite dossiers per canonical entity.
 from __future__ import annotations
 
 import csv
-import json
 import re
 from collections import defaultdict
 from collections.abc import Iterable, Sequence

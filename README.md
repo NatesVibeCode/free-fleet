@@ -417,6 +417,9 @@ scripts/studio_preview.sh                          # disposable workspace on :80
 harness-fleet studio --workspace-root "$PWD" --port 8080
 ```
 
+Agents verifying the UI with screenshots: see [AGENTS.md](AGENTS.md) — use playwright,
+never raw Chrome, and give pytest runs explicit timeouts.
+
 ---
 
 ## Verification & Testing

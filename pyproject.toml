@@ -92,7 +92,10 @@ python_version = "3.10"
 warn_unused_ignores = true
 
 [[tool.mypy.overrides]]
-module = ["ddgs.*", "pdfminer.*", "pypdf", "jsonschema"]
+# Optional extras: installed or not, the imports must type the same way, so
+# declaring them here keeps `# type: ignore` from flipping between used and
+# unused (warn_unused_ignores) whenever an extra is added or removed.
+module = ["ddgs.*", "pdfminer.*", "pypdf", "jsonschema", "playwright.*", "trafilatura", "readability"]
 ignore_missing_imports = true
 
 # calibrate's nested-sweep nonlocal bindings are runtime-proven (the module

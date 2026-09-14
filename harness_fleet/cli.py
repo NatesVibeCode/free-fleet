@@ -99,10 +99,34 @@ def _split_csv_list(values: list[str] | str | None) -> list[str] | None:
     return result if result else None
 
 
+def _studio_policy(store: HarnessStore, args: argparse.Namespace) -> dict[str, Any]:
+    """The route policy fields implied by the studio's persisted selection.
+
+    Honours the selection's mode: 'free' pins the verified zero-price routes
+    of the chosen providers (and implies --free-only); 'specific' pins the
+    exact route ids the operator ticked.
+    """
+    selection = store.get_studio_selection()
+    if not selection or not (selection.get("providers") or selection.get("routes")):
+        return {}
+    mode = selection.get("mode") or "free"
+    chosen = [str(p) for p in selection.get("providers") or []]
+    if mode == "free":
+        catalog = RouteCatalog(db_path=store.path)
+        routes = [r["id"] for r in catalog.get_routes(free_only=False, include_disabled=False)
+                  if r["provider"] in chosen and r["price_state"] == "price_observed_zero"]
+        return {"allowed_routes": routes or None, "free_only": True}
+    routes = [str(r) for r in selection.get("routes") or []]
+    return {"allowed_routes": routes or None}
+
+
 def _extract_policy(args: argparse.Namespace) -> RoutePolicy | None:
-    providers = _split_csv_list(getattr(args, "provider", None))
+    store = _store(args)
+    from_studio = bool(getattr(args, "from_studio", False))
+    studio_fields: dict[str, Any] = _studio_policy(store, args) if from_studio else {}
+    providers = _split_csv_list(getattr(args, "provider", None)) or studio_fields.get("allowed_transports")
     exclude_providers = _split_csv_list(getattr(args, "exclude_provider", None)) or []
-    routes = _split_csv_list(getattr(args, "route", None))
+    routes = _split_csv_list(getattr(args, "route", None)) or studio_fields.get("allowed_routes")
     exclude_routes = _split_csv_list(getattr(args, "exclude_route", None)) or []
     zdr = bool(getattr(args, "zdr", False))
     no_data_coll = bool(getattr(args, "no_data_collection", False))
@@ -110,7 +134,7 @@ def _extract_policy(args: argparse.Namespace) -> RoutePolicy | None:
     max_cost_out = float(getattr(args, "max_cost_out", 0.0) or 0.0)
     raw_req_cost = getattr(args, "max_request_cost", None)
     max_request_cost = float(raw_req_cost) if raw_req_cost is not None else None
-    free_only = bool(getattr(args, "free_only", False))
+    free_only = bool(getattr(args, "free_only", False)) or bool(studio_fields.get("free_only"))
     openrouter_providers = _split_csv_list(getattr(args, "openrouter_providers", None))
     openrouter_ignore = _split_csv_list(getattr(args, "openrouter_ignore", None)) or []
     openrouter_order = _split_csv_list(getattr(args, "openrouter_order", None))
@@ -860,6 +884,32 @@ def cmd_export(args: argparse.Namespace) -> None:
     )
 
 
+def cmd_settings(args: argparse.Namespace) -> None:
+    """Show or clear the studio's persisted harness/model selection."""
+    store = _store(args)
+    if getattr(args, "clear", False):
+        removed = store.get_studio_selection()
+        store.clear_studio_selection()
+        _emit({"cleared": bool(removed), "previous": removed}, args.json,
+              "Cleared the studio selection." if removed else "No studio selection was set.")
+        return
+    selection = store.get_studio_selection()
+    if selection:
+        mode = selection.get("mode") or "free"
+        providers = selection.get("providers") or []
+        routes = selection.get("routes") or []
+        if mode == "free":
+            policy = _studio_policy(store, args)
+            routes = list(policy.get("allowed_routes") or [])
+        message = f"Mode {mode}: {', '.join(providers) or 'no providers'}" + (f" · {len(routes)} route(s)" if routes else "")
+        _emit({"mode": mode, "providers": providers, "routes": routes,
+               "revision": store.get_studio_revision()},
+              args.json, message)
+        return
+    _emit({"mode": None, "providers": [], "routes": [], "revision": None},
+          args.json, "No studio selection has been saved. Open the studio to set one.")
+
+
 def cmd_schema(args: argparse.Namespace) -> None:
     models: dict[str, Any] = {
         "task": TaskSpec,
@@ -1578,6 +1628,10 @@ def build_parser() -> argparse.ArgumentParser:
     cooldowns.add_argument("--route", help="Specific route ID to clear")
     _common(cooldowns)
 
+    settings = commands.add_parser("settings", help="Show or clear the studio's saved harness/model selection")
+    settings.add_argument("--clear", action="store_true", help="Forget the saved selection")
+    _common(settings)
+
     tasks = commands.add_parser("tasks", help="List registered task definitions")
     _common(tasks)
 
@@ -1639,6 +1693,7 @@ def build_parser() -> argparse.ArgumentParser:
     run.add_argument("--output")
     run.add_argument("--profile", help="Optional Ideal Company Profile JSON; persist and attach its revision to this run")
     run.add_argument("--use-active-profile", action="store_true", help="Explicitly attach the active Ideal Company Profile from SQLite")
+    run.add_argument("--from-studio", action="store_true", help="Route this run through the studio's saved harness/model selection")
     run.add_argument("--workspace-root", default=".", help="Workspace root for relative paths")
     _input_options(run)
     _policy_options(run)
@@ -1661,6 +1716,7 @@ def build_parser() -> argparse.ArgumentParser:
     rescore.add_argument("--output")
     rescore.add_argument("--profile", help="Optional Ideal Company Profile JSON; persist and attach its revision to this run")
     rescore.add_argument("--use-active-profile", action="store_true", help="Explicitly attach the active Ideal Company Profile from SQLite")
+    rescore.add_argument("--from-studio", action="store_true", help="Route this run through the studio's saved harness/model selection")
     rescore.add_argument("--workspace-root", default=".", help="Workspace root for relative paths")
     _input_options(rescore)
     _policy_options(rescore)
@@ -1848,6 +1904,7 @@ def main() -> None:
         "setup": cmd_setup,
         "routes": cmd_routes,
         "cooldowns": cmd_cooldowns,
+        "settings": cmd_settings,
         "tasks": cmd_tasks,
         "init": cmd_init,
         "profile": cmd_profile,

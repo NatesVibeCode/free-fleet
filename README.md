@@ -390,27 +390,27 @@ Manual entry:
 
 ## Harness Studio (Local UI)
 
-`harness-fleet studio` serves a localhost-only UI over the same SQLite control plane
-(default `http://127.0.0.1:8080`; honors `--workspace-root`, `--port`, and `--db`).
-For a disposable preview workspace seeded with a demo task, run
-`scripts/studio_preview.sh`. The page is read from disk per request, so UI edits only
-need a browser refresh; Python changes need a restart.
+`harness-fleet studio` serves a localhost-only settings companion over the same SQLite
+control plane (default `http://127.0.0.1:8080`; honors `--workspace-root`, `--port`, and
+`--db`). For a disposable preview workspace, run `scripts/studio_preview.sh`. The page is
+read from disk per request, so UI edits only need a browser refresh; Python changes need a
+restart.
 
-Pick harnesses and their models, then build sequenced steps with per-step routes,
-budgets, and an explicit paid opt-in that records a trust note. Paid routes never run
-implicitly.
+It is deliberately small: pick harnesses, then pick from *their* models. Runs happen from
+the CLI or MCP, which read the same catalogue.
 
-The **Scoring contract** panel is a view over the task's typed `TaskSpec`. It shows the
-evidence checklist items, their points, source weights, recency half-lives, and the fixed
-0–100 tier bands, and it warns when the checklist does not total the cap. Saving writes a
-**new immutable task revision** and advances the active pointer; the previous revision
-stays readable as lineage. **Duplicate…** branches a tuned task under a new name. Score,
-fit tier, and pass/fail are computed by the pipeline from checklist answers and cannot be
-edited here — the panel rejects any attempt to set them.
+- **Harnesses start off.** Click to include. Each card shows whether its binary is on
+  `PATH` and that harness's own login command (`opencode providers`, `codex login`,
+  `cursor-agent login`, …) or, for API providers, the environment variable it needs. The
+  studio never handles credentials.
+- **Models are only listed for what you selected.** `Free models` uses every verified
+  `price_observed_zero` route of the selected harnesses; `Specific models` lists their
+  models so you choose. Unpriced routes are never picked automatically.
 
-Saves carry an `If-Match` precondition, so a second tab that loaded an older revision gets
-`412` instead of overwriting newer work, and the server refuses cross-origin requests so a
-page you visit cannot drive the studio.
+The scoring contract, tasks, and runs are edited through the CLI or an agent — their
+endpoints (`/api/tasks`, `/api/tasks/<name>/scoring`, `/api/runs`, `/api/routes/refresh`)
+remain available to scripts. The server refuses cross-origin requests so a page you visit
+cannot drive it.
 
 ```bash
 scripts/studio_preview.sh                          # disposable workspace on :8099

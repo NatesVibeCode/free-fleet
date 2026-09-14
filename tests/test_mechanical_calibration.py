@@ -474,7 +474,7 @@ def test_weighted_engine_end_to_end(tmp_path):
     task.source_weights = dict(WEIGHTED_TASK_KWARGS["source_weights"])
 
     class Stub:
-        def run_prompt(self, route_id, prompt, system_prompt=None, timeout_sec=120, session_id=None):
+        def run_prompt(self, route_id, prompt, system_prompt=None, timeout_sec=120, session_id=None, policy=None):
             payload = {
                 "items": [{
                     "item_id": "i1",
@@ -563,7 +563,7 @@ def test_aged_evidence_scores_less_end_to_end(tmp_path):
     task.recency_half_lives = {"supporting_signals": 20.0}
 
     class Stub:
-        def run_prompt(self, route_id, prompt, system_prompt=None, timeout_sec=120, session_id=None):
+        def run_prompt(self, route_id, prompt, system_prompt=None, timeout_sec=120, session_id=None, policy=None):
             payload = {
                 "items": [{
                     "item_id": "i1",
@@ -678,7 +678,7 @@ def test_engine_derives_score_from_checklist_claims(tmp_path):
     task = create_task_from_preset("check-run", preset_name="score")
 
     class Stub:
-        def run_prompt(self, route_id, prompt, system_prompt=None, timeout_sec=120, session_id=None):
+        def run_prompt(self, route_id, prompt, system_prompt=None, timeout_sec=120, session_id=None, policy=None):
             payload = {
                 "items": [{
                     "item_id": "i1",

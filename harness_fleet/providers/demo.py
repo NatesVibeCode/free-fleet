@@ -5,7 +5,7 @@ import json
 import uuid
 from typing import Any
 
-from ..models import ProviderReceipt
+from ..models import ProviderReceipt, RoutePolicy
 from .base import BaseProvider
 
 
@@ -70,7 +70,7 @@ class DemoProvider(BaseProvider):
         system_prompt: str | None = None,
         timeout_sec: int = 120,
         session_id: str | None = None,
-        policy: Any | None = None,
+        policy: RoutePolicy | None = None,
     ) -> tuple[bool, str | None, ProviderReceipt]:
         # Extract the task payload from the rendered prompt. Profile context
         # and other instructions may contain valid JSON objects before the

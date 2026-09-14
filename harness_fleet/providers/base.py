@@ -4,7 +4,7 @@ import re
 from abc import ABC, abstractmethod
 from typing import Any
 
-from ..models import ProviderReceipt
+from ..models import ProviderReceipt, RoutePolicy
 
 
 def clean_llm_json(text: str | None) -> Any | None:
@@ -109,7 +109,7 @@ class BaseProvider(ABC):
         system_prompt: str | None = None,
         timeout_sec: int = 120,
         session_id: str | None = None,
-        policy: Any | None = None,
+        policy: RoutePolicy | None = None,
     ) -> tuple[bool, str | None, ProviderReceipt]:
         """Executes a prompt in a session. Returns (success, text_response, receipt)."""
         pass

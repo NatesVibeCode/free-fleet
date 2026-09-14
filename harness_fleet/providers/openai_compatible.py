@@ -5,12 +5,12 @@ import os
 import threading
 import time
 import uuid
-from typing import Any, Literal
+from typing import Literal
 from urllib.parse import urlsplit
 
 import httpx
 
-from ..models import ProviderReceipt
+from ..models import ProviderReceipt, RoutePolicy
 from .base import BaseProvider
 
 _shared_client: httpx.Client | None = None
@@ -106,7 +106,7 @@ class OpenAICompatibleProvider(BaseProvider):
         system_prompt: str | None = None,
         timeout_sec: int = 120,
         session_id: str | None = None,
-        policy: Any | None = None,
+        policy: RoutePolicy | None = None,
     ) -> tuple[bool, str | None, ProviderReceipt]:
         started = time.time()
         rid = uuid.uuid4().hex

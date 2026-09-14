@@ -176,7 +176,7 @@ def test_collect_observations_counts_skips(tmp_path):
 
     task = _task()
 
-    def run_prompt(route_id, prompt, system_prompt=None):
+    def run_prompt(route_id, prompt, system_prompt=None, policy=None):
         quote = "Acme is migrating its platform to Kubernetes this quarter."
         payload = {"items": [{
             "item_id": "s1",

@@ -196,11 +196,7 @@ class Engine:
                 # There is no silent fallback to another provider.
                 return False, None, None, str(exc)
 
-            import inspect
-            prompt_kwargs: dict[str, Any] = {"session_id": session_id}
-            sig = inspect.signature(provider.run_prompt)
-            if "policy" in sig.parameters:
-                prompt_kwargs["policy"] = self.policy
+            prompt_kwargs: dict[str, Any] = {"session_id": session_id, "policy": self.policy}
 
             started_ts = time.time()
             ok, response_text, raw_receipt = provider.run_prompt(

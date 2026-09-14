@@ -12,7 +12,7 @@ class ProviderStub:
         self.payload = payload
         self.calls = 0
 
-    def run_prompt(self, route_id, prompt, system_prompt=None, timeout_sec=120, session_id=None):
+    def run_prompt(self, route_id, prompt, system_prompt=None, timeout_sec=120, session_id=None, policy=None):
         self.calls += 1
         receipt = {
             "id": "receipt-1",

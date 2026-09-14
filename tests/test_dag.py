@@ -324,3 +324,28 @@ def test_task_from_without_apply_fails_closed(tmp_path, monkeypatch):
     ]})
     with pytest.raises(DagError, match="did not apply"):
         run_dag(spec, store, workspace_root=tmp_path, dag_id="g3")
+
+
+def test_node_dict_policy_coerces_to_route_policy():
+    from harness_fleet.dag import RescoreNode, RunNode
+    from harness_fleet.models import RoutePolicy
+
+    run = RunNode.model_validate(
+        {"id": "a", "task": "t", "input": "i.csv", "policy": {"free_only": True}}
+    )
+    assert isinstance(run.policy, RoutePolicy)
+    assert run.policy.free_only is True
+    rescore = RescoreNode.model_validate(
+        {"id": "b", "parent_run": "r1", "input": "i.csv", "policy": {"zdr": True}}
+    )
+    assert isinstance(rescore.policy, RoutePolicy)
+    assert rescore.policy.zdr is True
+
+
+def test_node_invalid_policy_rejected_at_parse():
+    from harness_fleet.dag import RunNode
+
+    with pytest.raises(ValidationError):
+        RunNode.model_validate(
+            {"id": "a", "task": "t", "input": "i.csv", "policy": {"free_only": "yes"}}
+        )

@@ -26,7 +26,7 @@ from typing import Any, Literal, Protocol
 
 from pydantic import model_validator
 
-from ..models import ClosedModel, ProviderReceipt
+from ..models import ClosedModel, ProviderReceipt, RoutePolicy
 from .base import BaseProvider
 
 PromptDelivery = Literal["argv_last", "stdin", "file_flag"]
@@ -266,7 +266,7 @@ class CLIHarnessProvider(BaseProvider):
         system_prompt: str | None = None,
         timeout_sec: int = 120,
         session_id: str | None = None,
-        policy: Any | None = None,
+        policy: RoutePolicy | None = None,
     ) -> tuple[bool, str | None, ProviderReceipt]:
         started = time.time()
         receipt = self._new_receipt(route_id, session_id)

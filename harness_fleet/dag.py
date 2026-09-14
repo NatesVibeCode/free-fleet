@@ -47,7 +47,7 @@ class RunNode(ClosedModel):
     ids_mode: Literal["union", "intersection"] = "intersection"
     sessions: int = 4
     max_attempts: int = 300
-    policy: dict[str, Any] | None = None
+    policy: RoutePolicy | None = None
     id_column: str | None = None
     text_column: str | None = None
     title_column: str | None = None
@@ -77,7 +77,7 @@ class RescoreNode(ClosedModel):
     output: str | None = None
     sessions: int = 4
     max_attempts: int = 300
-    policy: dict[str, Any] | None = None
+    policy: RoutePolicy | None = None
     id_column: str | None = None
     text_column: str | None = None
     title_column: str | None = None
@@ -284,7 +284,7 @@ def _execute_rescore_node(
         title_column=node.title_column,
         uri_column=node.uri_column,
     )
-    policy = RoutePolicy.model_validate(node.policy) if node.policy else None
+    policy = node.policy
     output_path = (root / node.output).expanduser() if node.output else root / "runs" / run_id / "clean_packet.json"
     packet = Engine(task=task, store=store, policy=policy).run_campaign(
         raw_items=items,
@@ -469,7 +469,7 @@ def run_dag(
                 uri_column=node.uri_column,
                 only_ids=only_ids,
             )
-            policy = RoutePolicy.model_validate(node.policy) if node.policy else None
+            policy = node.policy
             packet = Engine(task=task, store=store, policy=policy).run_campaign(
                 raw_items=items,
                 run_id=run_id,

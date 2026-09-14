@@ -623,7 +623,7 @@ def cmd_rescore(args: argparse.Namespace) -> None:
         output=args.output,
         sessions=args.sessions,
         max_attempts=args.max_attempts,
-        policy=policy.model_dump(mode="json") if policy else None,
+        policy=policy,
         id_column=options.get("id_column"),
         text_column=options.get("text_column"),
         title_column=options.get("title_column"),

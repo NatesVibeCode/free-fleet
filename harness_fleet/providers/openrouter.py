@@ -8,7 +8,7 @@ from typing import Any
 
 import httpx
 
-from ..models import ProviderReceipt
+from ..models import ProviderReceipt, RoutePolicy
 from .base import BaseProvider
 
 _shared_client: httpx.Client | None = None
@@ -69,7 +69,7 @@ class OpenRouterProvider(BaseProvider):
         system_prompt: str | None = None,
         timeout_sec: int = 120,
         session_id: str | None = None,
-        policy: Any | None = None,
+        policy: RoutePolicy | None = None,
     ) -> tuple[bool, str | None, ProviderReceipt]:
         started = time.time()
         rid = uuid.uuid4().hex
@@ -118,25 +118,23 @@ class OpenRouterProvider(BaseProvider):
         }
 
         provider_cfg: dict[str, Any] = {}
-        # Policy attributes (zdr / allowed_providers / openrouter_*) are loosely
-        # typed in the model; assignments here are runtime-guarded by getattr.
         if policy:
-            if getattr(policy, "zdr", False) or not getattr(policy, "allow_data_collection", True):
+            if policy.zdr or not policy.allow_data_collection:
                 provider_cfg["data_collection"] = "deny"
-            if getattr(policy, "zdr", False):
+            if policy.zdr:
                 provider_cfg["zdr"] = True
-            if getattr(policy, "openrouter_order", None):
+            if policy.openrouter_order:
                 provider_cfg["order"] = policy.openrouter_order
-            elif getattr(policy, "openrouter_providers", None):
+            elif policy.openrouter_providers:
                 provider_cfg["order"] = policy.openrouter_providers
-            elif getattr(policy, "allowed_providers", None):
+            elif policy.allowed_providers:
                 transports = {"openrouter", "opencode", "openai_compatible", "ollama", "lmstudio", "vllm", "groq", "cerebras"}
                 upstream = [p for p in policy.allowed_providers if p.lower() not in transports]
                 if upstream:
                     provider_cfg["order"] = upstream
-            if getattr(policy, "openrouter_ignore", None):
+            if policy.openrouter_ignore:
                 provider_cfg["ignore"] = policy.openrouter_ignore
-            if hasattr(policy, "openrouter_allow_fallbacks") and not policy.openrouter_allow_fallbacks:
+            if not policy.openrouter_allow_fallbacks:
                 provider_cfg["allow_fallbacks"] = False
         if provider_cfg:
             payload["provider"] = provider_cfg

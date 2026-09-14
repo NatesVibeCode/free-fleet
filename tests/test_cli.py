@@ -275,7 +275,7 @@ def test_export_and_status_cli(tmp_path, capsys, monkeypatch):
         desc=True,
         top=1,
         rank=True,
-        filter_expr=None,
+        filter='{"all": [{"field": "priority", "value": "high"}]}',
         db=str(db),
         json=True,
     ))
@@ -322,3 +322,72 @@ def test_init_presets_score_and_account_research(tmp_path, capsys):
     assert out["created"] is True
     assert "passed" in out["claims_schema"]["properties"]
 
+
+
+def _write_jsonl(path, rows):
+    with open(path, "w", encoding="utf-8") as fh:
+        for row in rows:
+            fh.write(json.dumps(row, ensure_ascii=False) + "\n")
+
+
+def test_rescore_links_lineage_and_history(tmp_path, monkeypatch, capsys):
+    """cmd_rescore scores fresh evidence under a new run and history shows both rounds."""
+    from free_fleet.catalog import RouteCatalog
+
+    monkeypatch.chdir(tmp_path)
+    db = tmp_path / "state.db"
+    cli.cmd_init(Namespace(
+        name="rescore-demo", preset="score", batch_size=4,
+        source_weight=[], half_life=[],
+        sample=str(tmp_path / "sample.jsonl"), db=str(db), json=True,
+    ))
+    capsys.readouterr()
+    catalog = RouteCatalog(db_path=db)
+    catalog.add_route(
+        "demo/fake", provider="demo",
+        cost_per_1k_input=0.0, cost_per_1k_output=0.0,
+        enabled=True, price_state="price_observed_zero",
+    )
+    round1 = tmp_path / "round1.jsonl"
+    _write_jsonl(round1, [{
+        "item_id": "acme-r1",
+        "text": "Acme is migrating its platform to Kubernetes this quarter with senior hiring underway.",
+        "source_uri": "https://boards.greenhouse.io/acme/1",
+        "metadata": {"entity": "acme", "captured_at": "2026-08-01T00:00:00+00:00"},
+    }])
+    run_ns = dict(
+        task="rescore-demo", input=str(round1), route=["demo/fake"],
+        id_column=None, text_column=None, title_column=None, uri_column=None,
+        only_ids=None, only_ids_fuzzy=False, sessions=1, max_attempts=10,
+        output=None, profile=None, use_active_profile=False,
+        workspace_root=".", db=str(db), json=True,
+    )
+    cli.cmd_run(Namespace(run_id="round-1", **run_ns))
+    capsys.readouterr()
+    round2 = tmp_path / "round2.jsonl"
+    _write_jsonl(round2, [{
+        "item_id": "acme-r2",
+        "text": "Acme was acquired; the combined group is doubling platform investment this year.",
+        "source_uri": "https://example.com/press/acme-acquired",
+        "metadata": {"entity": "acme", "captured_at": "2026-09-01T00:00:00+00:00"},
+    }])
+    cli.cmd_rescore(Namespace(
+        parent_run="round-1", task=None, input=str(round2), route=["demo/fake"],
+        id_column=None, text_column=None, title_column=None, uri_column=None,
+        only_ids=None, only_ids_fuzzy=False, sessions=1, max_attempts=10,
+        run_id="round-2", output=None, profile=None, use_active_profile=False,
+        workspace_root=".", db=str(db), json=True,
+    ))
+    out = json.loads(capsys.readouterr().out)
+    assert out["run_id"] == "round-2" and out["parent_run"] == "round-1"
+    assert out["result"]["total_verified_records"] == 1
+
+    store = BulkLanesStore(db)
+    assert store.run_snapshot("round-2")["parent_run_id"] == "round-1"
+    rows = store.get_entity_history("acme")
+    assert [row["run_id"] for row in rows] == ["round-1", "round-2"]
+    assert all(row["score"] == 100 for row in rows)
+
+    cli.cmd_history(Namespace(entity="acme", db=str(db), json=True))
+    history = json.loads(capsys.readouterr().out)
+    assert history["entity"] == "acme" and len(history["rounds"]) == 2

@@ -30,7 +30,7 @@ pinecone.io,"Hiring Infrastructure Engineer scaling vector search across multi-t
 ### 1. Initialize the account research preset and run
 
 ```bash
-# Initialize the typed account-research preset (score 0-100, identified_gap, fit_tier)
+# Initialize the typed account-research preset (evidence checklist, identified_gap; score/fit_tier derived)
 account-fleet init research-demo --preset account-research
 
 # Process the accounts through free model routes (zero API spend)
@@ -58,11 +58,14 @@ Illustrative values only; real exports also include source URLs, digests, and qu
 
 Every output row is gated through deterministic checks *before* it is committed to SQLite. If any check fails, the batch rotates to the next route — nothing unverified is exported.
 
-1. **Deterministic Quote Verification**: Cited quotes are checked against the raw source text at character-level precision and resolved to canonical `[start, end]` offsets. Fabricated or altered quotes fail grounding and trigger immediate route rotation. *(This proves all cited quotes are verbatim source substrings; whether a claim is truly entailed by its quote remains model-generated.)*
+1. **Deterministic Quote Verification**: Cited quotes are checked against the raw source text at character-level precision and resolved to canonical `[start, end]` offsets. Sections with evidence terms also expose numbered candidate spans the worker cites by id instead of free-searching; verification recomputes the same span table, so offsets are code-owned. Fabricated or altered quotes fail grounding and trigger immediate route rotation. *(This proves all cited quotes are verbatim source substrings; whether a claim is truly entailed by its quote remains model-generated.)*
 2. **Closed JSON Schemas**: Outputs adhere strictly to closed JSON Schemas defined in `TaskSpec`. Models cannot add fields, emit markdown, or drift out of schema.
-3. **Intelligent Route Scoring**: Bayesian-smoothed scoring by verification rate, grounding accuracy, malformed-JSON rate, and latency — not round-robin. Best routes are tried first.
-4. **Non-Destructive Rate-Limit Handling**: On `429` or `5xx`, the route is cooled down and the batch is retried immediately on the next lane with **0 attempt burn**.
-5. **Zero-Price Circuit Breaker & Spend Ceilings**: For zero-price runs, pricing is observed from provider receipts; a non-zero charge trips the breaker and disables the route. For paid runs, `--max-request-cost` enforces per-request caps.
+3. **Derived Scores and Tiers, Not Double Judgment**: Scoring tasks collect an evidence-bound `checklist` of true/false answers, and the pipeline computes `score` (summed points, capped at 100), `fit_tier` (85+ → `tier_1`, 70+ → `tier_2`, 50+ → `tier_3`, else `unfit`), and `passed`. A mismatched derived value fails validation and rotates routes.
+4. **Weighted, Time-Decayed Evidence**: Every true answer needs a supporting quote tagged with `supports`, and each answer scores its points scaled by source weight (configurable per-domain rules, longest match wins) and recency decay (per-item half-lives — hiring signals stale in weeks, company fundamentals in months). Untagged truth scores zero, so weak evidence can only lower a score, never inflate one.
+5. **Intelligent Route Scoring**: Bayesian-smoothed scoring by verification rate, grounding accuracy, malformed-JSON rate, and latency — not round-robin. Best routes are tried first.
+6. **Non-Destructive Rate-Limit Handling**: On `429` or `5xx`, the route is cooled down and the batch is retried immediately on the next lane with **0 attempt burn**.
+7. **Rescore Lineage, Not Overwrites**: Fresh evidence arrives as new runs linked by `parent_run_id`; every verified record lands in `score_history`, and `free-fleet history ENTITY` shows the score trajectory across rounds. Old scores are never rewritten — a stale 40 stays visible next to the new 85 and the evidence that moved it.
+8. **Zero-Price Circuit Breaker & Spend Ceilings**: For zero-price runs, pricing is observed from provider receipts; a non-zero charge trips the breaker and disables the route. For paid runs, `--max-request-cost` enforces per-request caps. Cost ceilings fail closed on undeclared pricing.
 
 > **Live proof:** `free-fleet status <run_id> --watch` streams batch progress and per-route `Verified / Rate limits / Latency`. Fabricated quotes show up instantly as `grounding_failed` and the next lane is tried.
 
@@ -110,9 +113,9 @@ Each named provider uses its own settings: `OLLAMA_BASE_URL`, `LMSTUDIO_BASE_URL
 Create typed tasks instantly with built-in presets:
 
 ```bash
-free-fleet init score-demo --preset score             # Numerical 0-100 fit score + evidence
+free-fleet init score-demo --preset score             # Evidence checklist + pipeline-derived 0-100 score
 free-fleet init filter-demo --preset filter           # Boolean qualification pass/fail gate
-free-fleet init account-demo --preset account-research # ICP scoring + technical gap extraction
+free-fleet init account-demo --preset account-research # Evidence checklist + derived ICP score/tier + gap extraction
 free-fleet init triage-demo --preset triage           # Priority (high/medium/low) + reason
 free-fleet init classify-demo --preset classify       # Categorical labels + summary
 free-fleet init extract-demo --preset extract         # Named entities + summary
@@ -150,16 +153,59 @@ Run multi-stage funnel filtering without running monolithic prompts or wasting m
 ```bash
 # Layer 1: Filter down to survivors
 free-fleet run l1-task --input 1000_candidates.csv --run-id l1
-free-fleet export l1 --format csv --filter "passed=true" --output l1_survivors.csv
+free-fleet export l1 --format csv --filter '{"all": [{"field": "passed", "value": true}]}' --output l1_survivors.csv
 
 # Layer 2: Only run on survivor IDs from Layer 1
 free-fleet run l2-task --input tech_docs.csv --only-ids l1_survivors.csv --run-id l2
-free-fleet export l2 --format csv --filter "passed=true" --output l2_survivors.csv
+free-fleet export l2 --format csv --filter '{"all": [{"field": "passed", "value": true}]}' --output l2_survivors.csv
 
 # Final Layer: Score survivors and rank top candidates
 free-fleet run l3-task --input gap_analysis.csv --only-ids l2_survivors.csv --run-id l3
 free-fleet export l3 --format csv --sort-by score --desc --top 25 --rank --output ranked_deliverable.csv
 ```
+
+Filters compose deterministically at export — a ClaimFilter document with `all`
+clauses (AND), `any` branches (OR), and ops `==, !=, >=, <=, >, <, in, not_in`:
+
+```bash
+free-fleet export l3 --format csv \
+  --filter '{"all": [{"field": "score", "op": ">=", "value": 70}, {"field": "passed", "value": true}]}' \
+  --output qualified.csv
+```
+
+Discovery pre-filters mechanically too:
+`fetch --title-include engineer --title-exclude manager --exclude-stack mainframe --min-chars 200`.
+
+### 2b. DAG Workflows (multi-stage funnels without CSV round-trips)
+Each workflow is a DAG of typed nodes — `run` (one Engine campaign = one SQLite run),
+`filter` (deterministic ID sets from a run snapshot), `export` (packet/CSV). Edges carry
+IDs and run references in-process, so funnels keep full drill-through (offsets, digests)
+at every hop instead of degrading through CSV files:
+
+```json
+{
+  "name": "funnel",
+  "nodes": [
+    {"kind": "run", "id": "l1", "task": "filter-task", "input": "candidates.csv",
+     "policy": {"allowed_routes": ["demo/fake"], "free_only": true}},
+    {"kind": "filter", "id": "l1f", "from_run": "l1",
+     "filter": {"all": [{"field": "passed", "value": true}]}, "top": 50},
+    {"kind": "run", "id": "l2", "task": "score-task", "input": "docs.csv", "ids_from": ["l1f"]},
+    {"kind": "export", "id": "out", "from_run": "l2", "format": "csv",
+     "sort": {"field": "score"}, "top": 25, "rank": true}
+  ]
+}
+```
+
+```bash
+free-fleet dag --spec funnel.json --dry-run --json   # validate + print order
+free-fleet dag --spec funnel.json --dag-id campaign-01 --json
+```
+
+Node run IDs are deterministic (`<dag-id>-<node-id>`), so re-running resumes completed
+`run` nodes from SQLite while `filter`/`export` re-execute. Lineage (spec digest, run IDs,
+counts, artifacts) lands in `runs/<dag-id>/dag.json`. Cycles, unknown references, and
+wrong-kind edges fail closed at parse time.
 
 ### 3. Live Run Monitoring
 Track queue progress, worker concurrency, and route-level metrics in real time:

@@ -6,8 +6,12 @@ from unittest.mock import MagicMock
 
 from free_fleet.models import (
     CandidateExtractedItem,
+    ClaimFilter,
+    FilterClause,
+    FilterOp,
     QuoteCandidate,
     InputItem,
+    SortSpec,
     TaskSpec,
 )
 from free_fleet.providers.base import clean_llm_json
@@ -44,6 +48,16 @@ def test_clean_llm_json_conversational_and_malformed():
     assert clean_llm_json("") is None
     assert clean_llm_json("   ") is None
     assert clean_llm_json("Not a json at all") is None
+
+
+def test_clean_llm_json_ignores_preamble_braces():
+    # A brace in conversational preamble must not glue onto the payload.
+    text = 'Here is {an idea} for you: {"items": [{"id": 1}]} done.'
+    assert clean_llm_json(text) == {"items": [{"id": 1}]}
+    # Trailing-comma payload without fences still repairs.
+    assert clean_llm_json('Result: {"a": 1,} end') == {"a": 1}
+    # Bare scalars are not answers.
+    assert clean_llm_json("count is 42") is None
 
 
 def test_opencode_prefix_stripping():
@@ -111,12 +125,11 @@ def test_export_sorting_mixed_types_and_quoted_filters():
         ),
     ]
 
-    sorted_recs = _filter_and_sort_records(records, sort_by="score", descending=True)
+    sorted_recs = _filter_and_sort_records(records, sort=SortSpec(field="score", descending=True))
     assert [r.item_id for r in sorted_recs] == ["rec_3", "rec_1", "rec_2"]
 
-    assert _evaluate_filter({"tier": "tier_1"}, "tier='tier_1'") is True
-    assert _evaluate_filter({"tier": "tier_1"}, 'tier="tier_1"') is True
-    assert _evaluate_filter({"score": 85}, "score>=80") is True
+    assert _evaluate_filter({"tier": "tier_1"}, ClaimFilter(all=[FilterClause(field="tier", value="tier_1")])) is True
+    assert _evaluate_filter({"score": 85}, ClaimFilter(all=[FilterClause(field="score", op=FilterOp.GTE, value=80)])) is True
 
 
 def test_resume_reclaims_abandoned_leased_batches(tmp_path: Path):
@@ -368,18 +381,20 @@ def test_crawl_site_link_extraction_with_render_js(monkeypatch):
     assert "https://example.com" in sources
 
 
-def test_evaluate_filter_double_equals_and_null():
+def test_evaluate_filter_equals_and_null():
     from free_fleet.export import _evaluate_filter
+    from free_fleet.models import ClaimFilter, FilterClause, FilterOp
 
-    assert _evaluate_filter({"fit_tier": "tier_1"}, "fit_tier == tier_1") is True
-    assert _evaluate_filter({"fit_tier": "tier_2"}, "fit_tier == tier_1") is False
-    assert _evaluate_filter({"score": 100}, "score == 100") is True
-    assert _evaluate_filter({"score": 90}, "score == 100") is False
-    assert _evaluate_filter({"score": 100}, "score = 100") is True
-    assert _evaluate_filter({"val": None}, "val == null") is True
-    assert _evaluate_filter({"val": None}, "val = none") is True
-    assert _evaluate_filter({"val": "present"}, "val != null") is True
-    assert _evaluate_filter({"val": None}, "val != null") is False
+    def _f(field, op, value):
+        return ClaimFilter(all=[FilterClause(field=field, op=FilterOp(op), value=value)])
+
+    assert _evaluate_filter({"fit_tier": "tier_1"}, _f("fit_tier", "==", "tier_1")) is True
+    assert _evaluate_filter({"fit_tier": "tier_2"}, _f("fit_tier", "==", "tier_1")) is False
+    assert _evaluate_filter({"score": 100}, _f("score", "==", 100)) is True
+    assert _evaluate_filter({"score": 90}, _f("score", "==", 100)) is False
+    assert _evaluate_filter({"val": None}, _f("val", "==", None)) is True
+    assert _evaluate_filter({"val": "present"}, _f("val", "!=", None)) is True
+    assert _evaluate_filter({"val": None}, _f("val", "!=", None)) is False
 
 
 def test_export_csv_reserved_column_collision(tmp_path: Path):
@@ -625,10 +640,18 @@ def test_pack_items_invalid_batch_size():
 def test_slicer_min_width():
     from free_fleet.slicer import slice_document
 
-    slices = slice_document("abcdefghij", max_chars=2)
-    assert len(slices) == 3
+    text = "abcdefghij"
+    slices = slice_document(text, max_chars=2)
+    # Lossless sliding windows: every char covered, exact offsets, bounded width
+    assert len(slices) >= 5
     for s in slices:
-        assert len(s["text"]) >= 1
+        assert 1 <= len(s["text"]) <= 2
+        assert text[s["start"]:s["end"]] == s["text"]
+    covered = bytearray(len(text))
+    for s in slices:
+        for i in range(s["start"], s["end"]):
+            covered[i] = 1
+    assert all(covered)
 
 
 def test_safe_json_in_all_discovery_backends():
@@ -745,7 +768,7 @@ def test_export_top_zero_and_negative(tmp_path: Path):
     run_data = {
         "run_id": "r1",
         "task": task_dump,
-        "task_revision": digest_json(task_dump),
+        "task_revision": digest_json(task.revision_payload()),
         "input_digest": "d" * 64,
         "batches": {
             "b1": {

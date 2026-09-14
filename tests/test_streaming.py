@@ -2,11 +2,11 @@ import json
 
 import pytest
 
-from free_fleet.engine import Engine
-from free_fleet.input_data import iter_input_items
-from free_fleet.models import TaskSpec
-from free_fleet.packer import iter_packed_batches
-from free_fleet.store import FreeFleetStore, MAX_NON_COUNTING_RETRIES
+from harness_fleet.engine import Engine
+from harness_fleet.input_data import iter_input_items
+from harness_fleet.models import TaskSpec
+from harness_fleet.packer import iter_packed_batches
+from harness_fleet.store import MAX_NON_COUNTING_RETRIES, HarnessStore
 
 
 def test_json_array_input_is_lazy(tmp_path):
@@ -44,7 +44,7 @@ def _stream_task(batch_size=1):
 
 
 def test_failed_one_shot_ingestion_rolls_back_run_and_batches(tmp_path):
-    store = FreeFleetStore(tmp_path / "broken.db")
+    store = HarnessStore(tmp_path / "broken.db")
 
     def broken_source():
         yield {"item_id": "one", "text": "source one"}
@@ -57,7 +57,7 @@ def test_failed_one_shot_ingestion_rolls_back_run_and_batches(tmp_path):
 
 
 def test_changed_replayable_source_rolls_back_ingestion(tmp_path):
-    store = FreeFleetStore(tmp_path / "changed.db")
+    store = HarnessStore(tmp_path / "changed.db")
     calls = 0
 
     def changing_source():
@@ -76,7 +76,7 @@ def test_changed_replayable_source_rolls_back_ingestion(tmp_path):
 
 
 def test_non_counting_rate_limit_retries_are_bounded(tmp_path):
-    store = FreeFleetStore(tmp_path / "rate.db")
+    store = HarnessStore(tmp_path / "rate.db")
     task = _stream_task()
     revision = store.register_task(task)
     store.create_run("rate-run", revision, "input", "d" * 64, 1, 2, 1, "output")

@@ -1,7 +1,7 @@
 import json
 from types import SimpleNamespace
 
-from free_fleet.providers.opencode import LocalOpenCodeCLI, OpenCodeProvider
+from harness_fleet.providers.opencode import LocalOpenCodeCLI, OpenCodeProvider
 
 
 class RunnerStub:
@@ -38,7 +38,7 @@ def test_local_runner_invokes_normal_opencode_cli(monkeypatch):
         captured["config"] = json.loads(__import__("pathlib").Path(cwd, "opencode.json").read_text())
         return SimpleNamespace(returncode=0, stdout="", stderr="")
 
-    monkeypatch.setattr("free_fleet.providers.opencode.subprocess.run", fake_run)
+    monkeypatch.setattr("harness_fleet.providers.opencode.subprocess.run", fake_run)
     LocalOpenCodeCLI().run({"permission": {"*": "deny"}, "mcp": {}}, ["run", "prompt"], 10)
 
     assert captured["command"] == ["opencode", "run", "prompt"]

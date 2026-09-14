@@ -1,12 +1,23 @@
 """Deterministic mechanisms: tier derivation, stack/title gates, IN/AND-OR filters, cost fail-closed."""
 import pytest
 
-from free_fleet import discover
-from free_fleet.discover import RawRecord, fetch_ashby_org, fetch_greenhouse_board, stack_signal, to_input_items
-from free_fleet.export import _evaluate_filter
-from free_fleet.models import ClaimFilter, FilterClause, FilterOp, TaskSpec, score_to_fit_tier
-from free_fleet.scoring import rank_with_scores
-from free_fleet.store import BulkLanesStore
+from harness_fleet.discover import (
+    RawRecord,
+    fetch_ashby_org,
+    fetch_greenhouse_board,
+    stack_signal,
+    to_input_items,
+)
+from harness_fleet.export import _evaluate_filter
+from harness_fleet.models import (
+    ClaimFilter,
+    FilterClause,
+    FilterOp,
+    TaskSpec,
+    score_to_fit_tier,
+)
+from harness_fleet.scoring import rank_with_scores
+from harness_fleet.store import HarnessStore
 
 
 def _account_task():
@@ -155,8 +166,8 @@ def test_filter_rejects_bad_shape():
 # --- 5. scoring hardening ----------------------------------------------------
 
 def test_cost_ceiling_is_fail_closed_on_unknown_pricing(tmp_path):
-    store = BulkLanesStore(tmp_path / "t.db")
-    from free_fleet.models import RoutePolicy
+    store = HarnessStore(tmp_path / "t.db")
+    from harness_fleet.models import RoutePolicy
 
     routes = [
         {"id": "r/priced", "provider": "x", "cost_per_1k_input": 0.0, "cost_per_1k_output": 0.0},
@@ -168,7 +179,7 @@ def test_cost_ceiling_is_fail_closed_on_unknown_pricing(tmp_path):
 
 
 def test_latest_eval_wins_by_created_at_not_row_order(tmp_path):
-    store = BulkLanesStore(tmp_path / "t.db")
+    store = HarnessStore(tmp_path / "t.db")
     store.record_route_eval({
         "task_name": "t", "route_id": "r/a", "provider": "x",
         "total_samples": 4, "schema_pass_count": 4, "grounding_pass_count": 4,
@@ -183,16 +194,16 @@ def test_latest_eval_wins_by_created_at_not_row_order(tmp_path):
         "avg_latency_seconds": 1.0, "composite_score": 0.05,
         "created_at": "2026-09-14T00:00:01Z",
     })
-    from free_fleet.scoring import RouteScorer
+    from harness_fleet.scoring import RouteScorer
 
     scores = RouteScorer(store).score_routes([{"id": "r/a", "provider": "x"}], task_name="t")
     assert scores["r/a"] > 0.5  # the newer 0.95 eval dominates, not the older 0.05
 
 
 def test_legacy_complete_with_error_text_is_not_verified(tmp_path):
-    from free_fleet.store import BulkLanesStore
+    from harness_fleet.store import HarnessStore
 
-    store = BulkLanesStore(tmp_path / "t.db")
+    store = HarnessStore(tmp_path / "t.db")
     with store.connect() as conn:
         conn.execute(
             """INSERT INTO model_runs(
@@ -213,9 +224,9 @@ def test_legacy_complete_with_error_text_is_not_verified(tmp_path):
 
 
 def test_backoff_delay_progression_and_clamp():
-    from free_fleet.store import BulkLanesStore
+    from harness_fleet.store import HarnessStore
 
-    backoff = BulkLanesStore.backoff_delay
+    backoff = HarnessStore.backoff_delay
     assert backoff(1) == 30.0
     assert backoff(2) == 60.0
     assert backoff(3) == 180.0
@@ -226,16 +237,16 @@ def test_backoff_delay_progression_and_clamp():
 
 
 def test_empty_filter_matches_all():
-    from free_fleet.export import _evaluate_filter
+    from harness_fleet.export import _evaluate_filter
 
     assert _evaluate_filter({"score": 5}, ClaimFilter()) is True
     assert _evaluate_filter({}, ClaimFilter()) is True
 
 
 def test_route_evals_are_retention_bounded(tmp_path):
-    from free_fleet.store import BulkLanesStore
+    from harness_fleet.store import HarnessStore
 
-    store = BulkLanesStore(tmp_path / "t.db")
+    store = HarnessStore(tmp_path / "t.db")
 
     def _eval(score, ts):
         return {
@@ -255,7 +266,7 @@ def test_route_evals_are_retention_bounded(tmp_path):
 
 
 def test_tiebreak_is_deterministic_without_seed(tmp_path):
-    store = BulkLanesStore(tmp_path / "t.db")
+    store = HarnessStore(tmp_path / "t.db")
     routes = [{"id": f"r/{name}", "provider": "x"} for name in ("b", "a", "c")]
     first, _ = rank_with_scores(routes, store, seed="")
     second, _ = rank_with_scores(list(reversed(routes)), store, seed="")
@@ -265,7 +276,7 @@ def test_tiebreak_is_deterministic_without_seed(tmp_path):
 # --- provider payload extraction -------------------------------------------
 
 def _task_prompt(prefix: str = "") -> str:
-    from free_fleet.models import TaskSpec
+    from harness_fleet.models import TaskSpec
 
     task = TaskSpec(name="t", instructions="Do it.")
     payload = task.render_prompt([{
@@ -277,9 +288,11 @@ def _task_prompt(prefix: str = "") -> str:
 
 
 def test_extract_output_schema_ignores_profile_braces():
-    from free_fleet.providers.base import extract_task_payload
-    from free_fleet.providers.openrouter import _extract_output_schema as or_schema
-    from free_fleet.providers.openai_compatible import _extract_output_schema as oc_schema
+    from harness_fleet.providers.base import extract_task_payload
+    from harness_fleet.providers.openai_compatible import (
+        _extract_output_schema as oc_schema,
+    )
+    from harness_fleet.providers.openrouter import _extract_output_schema as or_schema
 
     profile = (
         'IDEAL COMPANY PROFILE: X (v1)\nScoring rubric: {"weights": {"a": 1}}'
@@ -292,7 +305,7 @@ def test_extract_output_schema_ignores_profile_braces():
 
 
 def test_blank_text_is_rejected_at_input_boundary(tmp_path):
-    from free_fleet.input_data import InputDataError, load_input_items
+    from harness_fleet.input_data import InputDataError, load_input_items
 
     blank = tmp_path / "blank.jsonl"
     blank.write_text('{"item_id": "b1", "text": "   "}\n')
@@ -303,7 +316,7 @@ def test_blank_text_is_rejected_at_input_boundary(tmp_path):
 # --- worker guide ------------------------------------------------------------
 
 def test_worker_guide_states_verifier_numbers():
-    from free_fleet.models import TaskSpec
+    from harness_fleet.models import TaskSpec
 
     task = TaskSpec(
         name="g",
@@ -329,7 +342,7 @@ def test_worker_guide_states_verifier_numbers():
 
 
 def test_worker_guide_omits_tiers_without_score_fields():
-    from free_fleet.models import TaskSpec
+    from harness_fleet.models import TaskSpec
 
     task = TaskSpec(
         name="plain",
@@ -344,7 +357,7 @@ def test_worker_guide_omits_tiers_without_score_fields():
 
 
 def test_every_preset_property_carries_a_worker_description():
-    from free_fleet.task import PRESETS, create_task_from_preset
+    from harness_fleet.task import PRESETS, create_task_from_preset
 
     for preset_name in PRESETS:
         task = create_task_from_preset(f"t-{preset_name}", preset_name=preset_name)
@@ -365,7 +378,7 @@ def test_bundled_example_tasks_carry_worker_descriptions():
         repo / "examples/account_research/task.json",
         repo / "examples/saas_intelligence/task.json",
         repo / "examples/security_cve_triage/task.json",
-        repo / "free_fleet/resources/examples/account_research/task.json",
+        repo / "harness_fleet/resources/examples/account_research/task.json",
     ]
     for path in paths:
         props = json.loads(path.read_text())["claims_schema"]["properties"]
@@ -374,7 +387,7 @@ def test_bundled_example_tasks_carry_worker_descriptions():
 
 
 def test_account_research_preset_guide_names_tiers_and_gap():
-    from free_fleet.task import create_task_from_preset
+    from harness_fleet.task import create_task_from_preset
 
     task = create_task_from_preset("research", preset_name="account-research")
     guide = task.render_worker_guide()
@@ -383,8 +396,8 @@ def test_account_research_preset_guide_names_tiers_and_gap():
 
 
 def test_render_prompt_embeds_guide_before_payload():
-    from free_fleet.models import TaskSpec
-    from free_fleet.providers.base import extract_task_payload
+    from harness_fleet.models import TaskSpec
+    from harness_fleet.providers.base import extract_task_payload
 
     task = TaskSpec(name="t", instructions="Do it.", min_quote_chars=15)
     prompt = task.render_prompt([{

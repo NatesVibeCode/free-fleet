@@ -1,6 +1,7 @@
 import httpx
-from free_fleet.models import RoutePolicy
-from free_fleet.providers.openrouter import OpenRouterProvider
+
+from harness_fleet.models import RoutePolicy
+from harness_fleet.providers.openrouter import OpenRouterProvider
 
 
 def test_openrouter_injects_zdr_and_privacy_controls(monkeypatch):

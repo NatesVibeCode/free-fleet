@@ -3,9 +3,9 @@ requires = ["setuptools>=77.0"]
 build-backend = "setuptools.build_meta"
 
 [project]
-name = "account-fleet"
-version = "0.2.8"
-description = "Research and score target accounts for free with exact quote verification."
+name = "harness-fleet"
+version = "0.3.0"
+description = "Coordinate any CLI-harness worker fleet with closed fields and exact quote verification."
 readme = "README.md"
 license = "MIT"
 license-files = ["LICENSE"]
@@ -31,10 +31,10 @@ dependencies = [
 ]
 
 [project.urls]
-Homepage = "https://github.com/NatesVibeCode/account-fleet"
-Repository = "https://github.com/NatesVibeCode/account-fleet"
-Issues = "https://github.com/NatesVibeCode/account-fleet/issues"
-Security = "https://github.com/NatesVibeCode/account-fleet/security/policy"
+Homepage = "https://github.com/NatesVibeCode/harness-fleet"
+Repository = "https://github.com/NatesVibeCode/harness-fleet"
+Issues = "https://github.com/NatesVibeCode/harness-fleet/issues"
+Security = "https://github.com/NatesVibeCode/harness-fleet/security/policy"
 
 [project.optional-dependencies]
 dev = [
@@ -51,20 +51,18 @@ js = [
 ]
 
 [project.scripts]
-account-fleet = "free_fleet.cli:main"
-free-fleet = "free_fleet.cli:main"
-bulk-lanes = "free_fleet.cli:main"
+harness-fleet = "harness_fleet.cli:main"
 
 [tool.setuptools.packages.find]
-include = ["free_fleet*"]
+include = ["harness_fleet*"]
 
 [tool.setuptools.package-data]
-free_fleet = [
+harness_fleet = [
     "migrations/*.sql",
     "data/*.json",
-    "resources/skill/*.md",
-    "resources/skill/references/*.md",
-    "resources/skill/agents/*.yaml",
+    "resources/harness_skill/*.md",
+    "resources/harness_skill/references/*.md",
+    "resources/harness_skill/agents/*.yaml",
     "resources/account_skill/*.md",
     "resources/account_skill/references/*.md",
     "resources/examples/account_research/*.json",
@@ -72,9 +70,40 @@ free_fleet = [
 ]
 
 [tool.setuptools.data-files]
-"share/free-fleet/schemas" = ["schemas/*.json"]
+"share/harness-fleet/schemas" = ["schemas/*.json"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
 python_files = "test_*.py"
 pythonpath = ["."]
+
+[tool.ruff]
+target-version = "py310"
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "N", "UP", "B", "PLR0124"]
+ignore = ["E501"]
+
+[tool.mypy]
+python_version = "3.10"
+warn_unused_ignores = true
+
+[[tool.mypy.overrides]]
+module = [
+    "harness_fleet.providers.*",
+    "harness_fleet.cli",
+    "harness_fleet.mcp_server",
+    "harness_fleet.setup",
+]
+ignore_errors = true
+
+[[tool.mypy.overrides]]
+module = ["ddgs.*", "pdfminer.*", "pypdf", "jsonschema"]
+ignore_missing_imports = true
+
+# calibrate's nested-sweep nonlocal bindings are runtime-proven (the module
+# compiles, so the bindings exist); mypy's scope analysis false-positives
+# here, and inline ignores are invalid on nonlocal statements.
+[[tool.mypy.overrides]]
+module = "harness_fleet.calibrate"
+disable_error_code = ["misc"]

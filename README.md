@@ -8,7 +8,20 @@
 
 Local outbound intelligence engine for high-throughput, evidence-grounded account research across free, paid, and local LLMs — with SQLite checkpointing, 4-layer compounding funnels, and deterministic quote verification.
 
-*Canonical CLI is `account-fleet`. (`free-fleet` remains available as an alias).*
+*Canonical CLI is `harness-fleet`. (The `account-fleet` research CLI ships separately from the account-fleet distribution — install one fleet per environment.)*
+
+## Migrating from free-fleet
+
+Version 0.3.0 renames the `free-fleet` distribution to `harness-fleet` (the old `bulk-lanes` name is gone). Back up your database first, then:
+
+```bash
+cp free-fleet.db free-fleet.db.bak  # back up first
+mv free-fleet.db harness-fleet.db
+harness-fleet setup --workspace-root .   # re-installs the skill
+harness-fleet mcp install                # re-installs client configs
+```
+
+Old packets (`free_fleet_v2` / `bulk_lanes_v2`) no longer read; re-export them from SQLite before upgrading. The `FREE_FLEET_DB` / `BULK_LANES_DB` / `ACCOUNT_FLEET_DB` variables are replaced by the single `HARNESS_FLEET_DB`. There is no downgrade path — restore your backup to go back.
 
 Python 3.10+ is required. This is a command-line tool with an optional AI-assistant integration. It scores source text you supply; the CLI does not browse for companies or fetch job postings automatically. The bundled account-fleet skill guides a connected assistant through that research.
 
@@ -64,10 +77,10 @@ Every output row is gated through deterministic checks *before* it is committed 
 4. **Weighted, Time-Decayed Evidence**: Every true answer needs a supporting quote tagged with `supports`, and each answer scores its points scaled by source weight (configurable per-domain rules, longest match wins) and recency decay (per-item half-lives — hiring signals stale in weeks, company fundamentals in months). Untagged truth scores zero, so weak evidence can only lower a score, never inflate one.
 5. **Intelligent Route Scoring**: Bayesian-smoothed scoring by verification rate, grounding accuracy, malformed-JSON rate, and latency — not round-robin. Best routes are tried first.
 6. **Non-Destructive Rate-Limit Handling**: On `429` or `5xx`, the route is cooled down and the batch is retried immediately on the next lane with **0 attempt burn**.
-7. **Rescore Lineage, Not Overwrites**: Fresh evidence arrives as new runs linked by `parent_run_id`; every verified record lands in `score_history`, and `free-fleet history ENTITY` shows the score trajectory across rounds. Old scores are never rewritten — a stale 40 stays visible next to the new 85 and the evidence that moved it.
+7. **Rescore Lineage, Not Overwrites**: Fresh evidence arrives as new runs linked by `parent_run_id`; every verified record lands in `score_history`, and `harness-fleet history ENTITY` shows the score trajectory across rounds. Old scores are never rewritten — a stale 40 stays visible next to the new 85 and the evidence that moved it.
 8. **Zero-Price Circuit Breaker & Spend Ceilings**: For zero-price runs, pricing is observed from provider receipts; a non-zero charge trips the breaker and disables the route. For paid runs, `--max-request-cost` enforces per-request caps. Cost ceilings fail closed on undeclared pricing.
 
-> **Live proof:** `free-fleet status <run_id> --watch` streams batch progress and per-route `Verified / Rate limits / Latency`. Fabricated quotes show up instantly as `grounding_failed` and the next lane is tried.
+> **Live proof:** `harness-fleet status <run_id> --watch` streams batch progress and per-route `Verified / Rate limits / Latency`. Fabricated quotes show up instantly as `grounding_failed` and the next lane is tried.
 
 ---
 
@@ -102,34 +115,34 @@ mkdir my-workspace && cd my-workspace
 account-fleet setup --workspace-root . --refresh-routes
 ```
 
-For a real run, configure OpenCode with your own provider access, set `OPENROUTER_API_KEY`, or register a running local model, for example `account-fleet routes add ollama/your-installed-model --provider ollama --free`. Refreshing routes alone does not authenticate you. `account-fleet doctor` checks configuration; `account-fleet test research-demo --input accounts.csv --id-column company --text-column careers_text --provider ollama` tests a real batch before a large campaign.
+For a real run, configure one of the seven CLI harnesses (`opencode`, `claude`, `codex`, `cursor`, `grok`, `muse`, `antigravity`) with your own provider access, set `OPENROUTER_API_KEY`, or register a running local model, for example `account-fleet routes add ollama/your-installed-model --provider ollama --free`. Refreshing routes alone does not authenticate you. `account-fleet doctor` checks configuration; `account-fleet test research-demo --input accounts.csv --id-column company --text-column careers_text --provider ollama` tests a real batch before a large campaign.
 
 Each named provider uses its own settings: `OLLAMA_BASE_URL`, `LMSTUDIO_BASE_URL`, `GROQ_API_KEY`, and so on. `OPENAI_COMPATIBLE_BASE_URL` and `OPENAI_COMPATIBLE_API_KEY` configure only `--provider openai_compatible`. Environment variables must be available to the process running the CLI or MCP server; `.env` files are not loaded automatically.
 
-`setup` installs both the account-fleet research skill and the free-fleet execution skill in the workspace's `.agents/skills` directory. Keep the virtual environment in place when using the generated MCP configuration. Install account-fleet and free-fleet in separate environments: they share the `free_fleet` Python package and compatibility commands.
+`setup` installs both the account-fleet research skill and the harness-fleet execution skill in the workspace's `.agents/skills` directory. Keep the virtual environment in place when using the generated MCP configuration. Install account-fleet and harness-fleet in separate environments: they share the `harness_fleet` Python package and entry-point names, so one fleet per environment.
 
 ### Presets
 
 Create typed tasks instantly with built-in presets:
 
 ```bash
-free-fleet init score-demo --preset score             # Evidence checklist + pipeline-derived 0-100 score
-free-fleet init filter-demo --preset filter           # Boolean qualification pass/fail gate
-free-fleet init account-demo --preset account-research # Evidence checklist + derived ICP score/tier + gap extraction
-free-fleet init triage-demo --preset triage           # Priority (high/medium/low) + reason
-free-fleet init classify-demo --preset classify       # Categorical labels + summary
-free-fleet init extract-demo --preset extract         # Named entities + summary
-free-fleet init summarize-demo --preset summarize     # Supported fact summaries
+harness-fleet init score-demo --preset score             # Evidence checklist + pipeline-derived 0-100 score
+harness-fleet init filter-demo --preset filter           # Boolean qualification pass/fail gate
+harness-fleet init account-demo --preset account-research # Evidence checklist + derived ICP score/tier + gap extraction
+harness-fleet init triage-demo --preset triage           # Priority (high/medium/low) + reason
+harness-fleet init classify-demo --preset classify       # Categorical labels + summary
+harness-fleet init extract-demo --preset extract         # Named entities + summary
+harness-fleet init summarize-demo --preset summarize     # Supported fact summaries
 ```
 
 Validate and test before launching large runs:
 
 ```bash
 # Validate task spec and input without making any API calls
-free-fleet validate score-demo --input input.jsonl
+harness-fleet validate score-demo --input input.jsonl
 
 # Test a single real batch
-free-fleet test score-demo --input input.jsonl
+harness-fleet test score-demo --input input.jsonl
 ```
 
 ---
@@ -140,11 +153,11 @@ free-fleet test score-demo --input input.jsonl
 Directly process tabular data and export sorted, ranked deliverables with exact source quotes:
 
 ```bash
-# Run on CSV specifying ID and text columns (or let free-fleet auto-detect them)
-free-fleet run score-demo --input accounts.csv --run-id accts-01
+# Run on CSV specifying ID and text columns (or let harness-fleet auto-detect them)
+harness-fleet run score-demo --input accounts.csv --run-id accts-01
 
 # Export ranked deliverable: sorted by score descending, top 25, with 1-indexed rank column
-free-fleet export accts-01 --format csv --sort-by score --desc --top 25 --rank --output ranked_target_accounts.csv
+harness-fleet export accts-01 --format csv --sort-by score --desc --top 25 --rank --output ranked_target_accounts.csv
 ```
 
 ### 2. The Compounding Filter (Chaining Layers)
@@ -152,23 +165,23 @@ Run multi-stage funnel filtering without running monolithic prompts or wasting m
 
 ```bash
 # Layer 1: Filter down to survivors
-free-fleet run l1-task --input 1000_candidates.csv --run-id l1
-free-fleet export l1 --format csv --filter '{"all": [{"field": "passed", "value": true}]}' --output l1_survivors.csv
+harness-fleet run l1-task --input 1000_candidates.csv --run-id l1
+harness-fleet export l1 --format csv --filter '{"all": [{"field": "passed", "value": true}]}' --output l1_survivors.csv
 
 # Layer 2: Only run on survivor IDs from Layer 1
-free-fleet run l2-task --input tech_docs.csv --only-ids l1_survivors.csv --run-id l2
-free-fleet export l2 --format csv --filter '{"all": [{"field": "passed", "value": true}]}' --output l2_survivors.csv
+harness-fleet run l2-task --input tech_docs.csv --only-ids l1_survivors.csv --run-id l2
+harness-fleet export l2 --format csv --filter '{"all": [{"field": "passed", "value": true}]}' --output l2_survivors.csv
 
 # Final Layer: Score survivors and rank top candidates
-free-fleet run l3-task --input gap_analysis.csv --only-ids l2_survivors.csv --run-id l3
-free-fleet export l3 --format csv --sort-by score --desc --top 25 --rank --output ranked_deliverable.csv
+harness-fleet run l3-task --input gap_analysis.csv --only-ids l2_survivors.csv --run-id l3
+harness-fleet export l3 --format csv --sort-by score --desc --top 25 --rank --output ranked_deliverable.csv
 ```
 
 Filters compose deterministically at export — a ClaimFilter document with `all`
 clauses (AND), `any` branches (OR), and ops `==, !=, >=, <=, >, <, in, not_in`:
 
 ```bash
-free-fleet export l3 --format csv \
+harness-fleet export l3 --format csv \
   --filter '{"all": [{"field": "score", "op": ">=", "value": 70}, {"field": "passed", "value": true}]}' \
   --output qualified.csv
 ```
@@ -198,8 +211,8 @@ at every hop instead of degrading through CSV files:
 ```
 
 ```bash
-free-fleet dag --spec funnel.json --dry-run --json   # validate + print order
-free-fleet dag --spec funnel.json --dag-id campaign-01 --json
+harness-fleet dag --spec funnel.json --dry-run --json   # validate + print order
+harness-fleet dag --spec funnel.json --dag-id campaign-01 --json
 ```
 
 Node run IDs are deterministic (`<dag-id>-<node-id>`), so re-running resumes completed
@@ -211,7 +224,7 @@ wrong-kind edges fail closed at parse time.
 Track queue progress, worker concurrency, and route-level metrics in real time:
 
 ```bash
-free-fleet status <run_id> --watch
+harness-fleet status <run_id> --watch
 ```
 
 Output:
@@ -237,7 +250,7 @@ Route Performance:
 Benchmark available routes against test datasets to determine which models excel at your specific task:
 
 ```bash
-free-fleet eval customer-triage --input test-samples.csv --id-column id --text-column comment
+harness-fleet eval customer-triage --input test-samples.csv --id-column id --text-column comment
 ```
 
 Output:
@@ -259,7 +272,7 @@ Run bulk workloads completely locally with **Ollama**, **LM Studio**, **vLLM**, 
 
 ```bash
 # Register your local or custom route in the catalog
-free-fleet routes add ollama/llama3.2:latest --provider ollama --free
+harness-fleet routes add ollama/llama3.2:latest --provider ollama --free
 
 # Or configure environment variables
 export OPENAI_COMPATIBLE_BASE_URL="http://localhost:11434/v1"
@@ -267,7 +280,7 @@ export OPENAI_COMPATIBLE_API_KEY="ollama"
 export OPENAI_COMPATIBLE_MODEL="llama3.2:latest"
 
 # Run with local provider selection
-free-fleet run my-task --input data.csv --id-column id --text-column text --provider ollama
+harness-fleet run my-task --input data.csv --id-column id --text-column text --provider ollama
 ```
 
 Endpoints on `localhost` or `127.0.0.1` are automatically marked free (`cost = 0.0`). For third-party cloud OpenAI-compatible endpoints, specify costs explicitly (`--input-cost` / `--output-cost`) or leave them as unknown-cost to prevent accidental misclassification.
@@ -276,7 +289,7 @@ Endpoints on `localhost` or `127.0.0.1` are automatically marked free (`cost = 0
 Enforce zero data retention (ZDR), prohibit provider data collection, limit request spend, and control upstream routing on a per-run basis:
 
 ```bash
-free-fleet run my-task \
+harness-fleet run my-task \
   --input sensitive-data.jsonl \
   --zdr \
   --no-data-collection \
@@ -299,10 +312,10 @@ for the `source_quality` report; lower the floor with
 
 ## SQLite Control Plane
 
-`free-fleet` uses SQLite in WAL mode with `BEGIN IMMEDIATE` atomic leases. If a worker crashes or a laptop closes, the run can be resumed seamlessly:
+`harness-fleet` uses SQLite in WAL mode with `BEGIN IMMEDIATE` atomic leases. If a worker crashes or a laptop closes, the run can be resumed seamlessly:
 
 ```bash
-free-fleet resume <run_id>
+harness-fleet resume <run_id>
 ```
 
 Free routes are used by default. A paid route approved in an earlier session must be requested again with `--route <route-id>`.
@@ -349,14 +362,14 @@ Pass `--json` to any command for machine-readable JSON output. `--free-only` is 
 
 ## MCP Server
 
-`free-fleet` includes a Model Context Protocol (MCP) server for integration into Cursor, Claude Desktop, Antigravity, and other agent environments:
+`harness-fleet` includes a Model Context Protocol (MCP) server for integration into Cursor, Claude Desktop, Antigravity, and other agent environments:
 
 **One-command install (recommended for GTM folks):**
 ```bash
-free-fleet mcp install --workspace-root "$PWD"  # auto-detects Claude/Cursor, writes mcpServers entry
+harness-fleet mcp install --workspace-root "$PWD"  # auto-detects Claude/Cursor, writes mcpServers entry
 # Preview first
-free-fleet mcp install --dry-run --json
-free-fleet doctor --workspace-root "$PWD" --json  # verify
+harness-fleet mcp install --dry-run --json
+harness-fleet doctor --workspace-root "$PWD" --json  # verify
 # Restart Claude/Cursor to load
 ```
 
@@ -364,8 +377,8 @@ Manual entry:
 ```json
 {
   "mcpServers": {
-    "free-fleet": {
-      "command": "free-fleet",
+    "harness-fleet": {
+      "command": "harness-fleet",
       "args": ["serve", "--workspace-root", "/absolute/path/to/workspace"]
     }
   }

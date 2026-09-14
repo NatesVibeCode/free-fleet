@@ -445,6 +445,19 @@
           "title": "Free Only",
           "type": "boolean"
         },
+        "note": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "Operator-recorded reason for a routing choice (e.g. trust basis for an approved paid route)",
+          "title": "Note"
+        },
         "openrouter_providers": {
           "anyOf": [
             {

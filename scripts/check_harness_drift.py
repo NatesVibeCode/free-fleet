@@ -47,6 +47,7 @@ EXACT_FILES = (
     "harness_fleet/cli.py",
     "harness_fleet/mcp_server.py",
     "harness_fleet/setup.py",
+    "harness_fleet/studio.py",
     "harness_fleet/__init__.py",
     "harness_fleet/migrations/003_profiles.sql",
     "harness_fleet/export.py",
@@ -60,6 +61,7 @@ EXACT_FILES = (
     "harness_fleet/data/routes.seed.json",
     "harness_fleet/resources/harness_skill/references/task-contracts.md",
     "harness_fleet/resources/harness_skill/references/operations.md",
+    "harness_fleet/resources/studio/index.html",
     "skills/harness-fleet/references/operations.md",
     ".agents/skills/harness-fleet/references/operations.md",
 )

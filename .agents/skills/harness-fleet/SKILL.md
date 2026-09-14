@@ -18,6 +18,7 @@ Start with `command -v harness-fleet`. On a fresh system, run `harness-fleet set
 - To benchmark routes against task samples before large runs, use `harness-fleet eval TASK --input FILE --concurrency 4` or MCP `harness_fleet_eval`.
 - For a zero-key proof in 30s, run `harness-fleet quickstart --demo` (deterministic `demo/fake` provider, no API keys).
 - For schema bootstrapping from labels, use `harness-fleet init NAME --from-example labels.csv [--label-column label]`.
+- For click-through routing, run `harness-fleet studio` (localhost-only UI: pick harnesses, models, per-step budgets, and paid opt-ins).
 
 ## Invariants
 

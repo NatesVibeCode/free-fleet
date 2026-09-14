@@ -191,6 +191,8 @@ class Engine:
             try:
                 provider = self.registry.resolve(provider_hint)
             except ProviderResolutionError as exc:
+                # Fail-closed: an unresolvable route aborts the batch.
+                # There is no silent fallback to another provider.
                 return False, None, dict(last_receipt), str(exc)
 
             import inspect

@@ -29,7 +29,7 @@ def test_schema_has_recovered_control_plane_tables(tmp_path):
         "runs", "batches", "batch_attempts", "model_runs", "batch_results", "current_batch_results", "worker_sessions",
         "route_cooldowns", "route_evaluations", "inference_attempts",
     } <= tables
-    assert store.schema_version() == "4"
+    assert store.schema_version() == "5"
     assert {"profile_revisions", "active_profiles"} <= tables
     with store.connect() as connection:
         task_columns = {row[1] for row in connection.execute("PRAGMA table_info(task_revisions)")}
@@ -175,6 +175,9 @@ def test_legacy_database_migrates_to_harness_values(tmp_path):
         tables = {row[0] for row in check.execute("SELECT name FROM sqlite_master WHERE type='table'")}
         assert "harness_meta" in tables
         assert "bulk_meta" not in tables
+        assert store.schema_version() == "5"
+        triggers = {row[0] for row in check.execute("SELECT name FROM sqlite_master WHERE type='trigger'")}
+        assert {"task_revisions_no_update", "task_revisions_no_delete"} <= triggers
         assert check.execute("SELECT count(*) FROM task_revisions").fetchone()[0] == 2
         assert check.execute("SELECT count(*) FROM current_tasks").fetchone()[0] == 1
         versions = {
@@ -196,3 +199,19 @@ def test_legacy_database_migrates_to_harness_values(tmp_path):
         assert {
             row[0] for row in check.execute("SELECT DISTINCT format_version FROM task_revisions")
         } == {"harness_fleet_task_v1"}
+
+
+def test_legacy_database_with_both_meta_tables_migrates(tmp_path):
+    """Both-tables branch: a fresh harness_meta plus legacy bulk_meta merges."""
+
+    db_path = tmp_path / "both.db"
+    store = HarnessStore(db_path)
+    with store.connect() as check:
+        check.execute("CREATE TABLE bulk_meta(key TEXT PRIMARY KEY, value TEXT NOT NULL)")
+        check.execute("INSERT INTO bulk_meta(key,value) VALUES('schema_version','4')")
+    reopened = HarnessStore(db_path)
+    with reopened.connect() as check:
+        tables = {row[0] for row in check.execute("SELECT name FROM sqlite_master WHERE type='table'")}
+        assert "harness_meta" in tables
+        assert "bulk_meta" not in tables
+        assert reopened.schema_version() == "5"

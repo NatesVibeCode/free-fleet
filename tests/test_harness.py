@@ -37,7 +37,7 @@ class FakeProvider(CLIHarnessProvider):
             parts.append(prompt)
         return parts
 
-    def parse_output(self, *, code, stdout, stderr, receipt, started):
+    def parse_output(self, *, code, stdout, stderr, receipt, started, workdir=None):
         return parse_json_object_stdout(stdout, receipt=receipt)
 
 
@@ -95,6 +95,23 @@ def test_file_delivery_stages_exact_prompt():
     path = Path(argv[argv.index("--prompt-file") + 1])
     assert not path.exists()  # staged file is cleaned up after the run
     assert runner.seen["stdin_text"] is None
+
+
+def test_bare_route_id_allowed_when_model_ignored():
+    runner = StubRunner(stdout=json.dumps({"result": "ok"}))
+    provider = FakeProvider(_spec(model_from_route=False), runner=runner)
+    provider._preflight = lambda: None  # type: ignore[method-assign]
+    ok, text, _ = provider.run_prompt("fake", "prompt")
+    assert ok is True and text == "ok"
+
+
+def test_lockdown_strategy_fails_closed():
+    runner = StubRunner(stdout=json.dumps({"result": "ok"}))
+    provider = FakeProvider(_spec(task_config_strategy="cursor_sandbox_enabled"), runner=runner)
+    provider._preflight = lambda: None  # type: ignore[method-assign]
+    ok, _, receipt = provider.run_prompt("fake/model", "prompt")
+    assert ok is False
+    assert "lockdown" in (receipt["error"] or "")
 
 
 def test_malformed_route_fails_closed():

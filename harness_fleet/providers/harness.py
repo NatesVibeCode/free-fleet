@@ -41,9 +41,10 @@ class MalformedRouteError(ValueError):
 def split_route(route_id: str) -> tuple[str, str]:
     """Split ``head/remainder`` (or ``head:remainder``) with validation.
 
-    This is the single place harness model derivation parses route ids.
-    Blank ids and ids without a ``/`` or ``:`` separator raise
-    ``MalformedRouteError``; adapters fail closed on it.
+    This is the single place harness model derivation parses route ids,
+    except OpenCode, which keeps its tested native-prefix rule as an
+    override of ``derive_model``. Blank ids and ids without a ``/`` or
+    ``:`` separator raise ``MalformedRouteError``; adapters fail closed.
     """
     if not isinstance(route_id, str) or not route_id.strip():
         raise MalformedRouteError(f"malformed harness route id: {route_id!r}")
@@ -165,6 +166,20 @@ def parse_json_object_stdout(
     return True, text, receipt
 
 
+def run_error_receipt(
+    code: int, stdout: str, stderr: str, *, receipt: dict[str, Any]
+) -> tuple[bool, None, dict[str, Any]]:
+    """Shared non-zero-exit / no-output failure receipt (rate-limit aware)."""
+    err_msg = (stderr or stdout)[-500:] or f"Exit code {code}"
+    receipt["error"] = err_msg
+    if "429" in err_msg.lower() or "rate limit" in err_msg.lower():
+        receipt["error_type"] = "rate_limit"
+        receipt["retry_after"] = 10.0
+    else:
+        receipt["error_type"] = "inference_error"
+    return False, None, receipt
+
+
 class CLIHarnessProvider(BaseProvider):
     """Shared detect -> stage -> build-argv -> run -> parse -> receipt flow."""
 
@@ -195,7 +210,16 @@ class CLIHarnessProvider(BaseProvider):
         return None
 
     def derive_model(self, route_id: str) -> str:
-        """Model identity from a validated route id (base rule)."""
+        """Model identity from a validated route id (base rule).
+
+        Adapters with ``model_from_route=False`` ignore the model, so bare
+        route ids are accepted for them without validation.
+        """
+        if not self.spec.model_from_route:
+            _, _, remainder = route_id.partition("/")
+            if not remainder:
+                _, _, remainder = route_id.partition(":")
+            return remainder
         _, remainder = split_route(route_id)
         return remainder
 
@@ -233,6 +257,7 @@ class CLIHarnessProvider(BaseProvider):
         stderr: str,
         receipt: dict[str, Any],
         started: float,
+        workdir: Path | None = None,
     ) -> tuple[bool, str | None, dict[str, Any]]:
         """Adapter-owned parser. Must never return garbage text."""
         raise NotImplementedError
@@ -284,14 +309,25 @@ class CLIHarnessProvider(BaseProvider):
             )]
             if not all(isinstance(part, str) for part in argv):
                 raise TypeError("harness argv must be list[str]")
+            task_config = self._task_config_for(model)
+            # The lockdown strategy is load-bearing documentation: a spec
+            # that promises tool lockdown fails closed when its argv/config
+            # stops carrying it.
+            if self.spec.task_config_strategy == "cursor_sandbox_enabled" and "--sandbox" not in argv:
+                raise RuntimeError(f"{self.spec.name} argv lost its --sandbox lockdown")
+            if self.spec.task_config_strategy == "opencode_deny_all" and (
+                not isinstance(task_config, dict) or task_config.get("permission") != {"*": "deny"}
+            ):
+                raise RuntimeError(f"{self.spec.name} task config lost its deny-all lockdown")
             code, stdout, stderr = self._invoke(
                 argv=argv,
                 stdin_text=stdin_text,
-                task_config=self._task_config_for(model),
+                task_config=task_config,
                 timeout_sec=timeout_sec,
             )
             ok, text, receipt = self.parse_output(
-                code=code, stdout=stdout, stderr=stderr, receipt=receipt, started=started
+                code=code, stdout=stdout, stderr=stderr, receipt=receipt, started=started,
+                workdir=workdir,
             )
             receipt["duration_seconds"] = time.time() - started
             return ok, text, receipt

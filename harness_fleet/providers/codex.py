@@ -31,9 +31,14 @@ CODEX_SPEC = HarnessSpec(
 
 
 def parse_codex_jsonl(
-    stdout: str, stderr: str, code: int, *, receipt: dict[str, Any]
+    stdout: str, stderr: str, code: int, *, receipt: dict[str, Any], workdir: Path | None = None
 ) -> tuple[bool, str | None, dict[str, Any]]:
-    """Walk Codex ``--json`` events; fail closed when no text is found."""
+    """Walk Codex ``--json`` events; fail closed when no text is found.
+
+    The ``-o`` capture file is the documented final-message path, so when
+    stdout carries no text but the run exited 0, its content is the fallback
+    source -- never invented, never garbage from elsewhere.
+    """
     texts: list[str] = []
     last_err: str | None = None
     for line in stdout.splitlines():
@@ -60,6 +65,15 @@ def parse_codex_jsonl(
         if isinstance(usage, dict):
             receipt["usage"] = usage
     if code != 0 or not texts:
+        if code == 0 and workdir is not None:
+            final = workdir / "final.md"
+            try:
+                fallback = final.read_text(encoding="utf-8").strip()
+            except OSError:
+                fallback = ""
+            if fallback:
+                receipt["status"] = "complete"
+                return True, fallback, receipt
         err_msg = last_err or (stderr or stdout)[-500:] or f"Exit code {code}"
         receipt["error"] = err_msg
         if "429" in err_msg.lower() or "rate limit" in err_msg.lower():
@@ -85,7 +99,8 @@ class CodexProvider(CLIHarnessProvider):
         workspace: Path | None = None,
         workdir: Path | None = None,
     ) -> list[str]:
-        assert workdir is not None
+        if workdir is None:
+            raise RuntimeError("codex call workdir staging failed")
         out_file = workdir / "final.md"
         return [
             "exec",
@@ -103,5 +118,6 @@ class CodexProvider(CLIHarnessProvider):
         stderr: str,
         receipt: dict[str, Any],
         started: float,
+        workdir: Path | None = None,
     ) -> tuple[bool, str | None, dict[str, Any]]:
-        return parse_codex_jsonl(stdout, stderr, code, receipt=receipt)
+        return parse_codex_jsonl(stdout, stderr, code, receipt=receipt, workdir=workdir)

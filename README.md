@@ -15,7 +15,7 @@ Local outbound intelligence engine for high-throughput, evidence-grounded accoun
 Version 0.3.0 renames the `free-fleet` distribution to `harness-fleet` (the old `bulk-lanes` name is gone). Back up your database first, then:
 
 ```bash
-cp free-fleet.db free-fleet.db.bak  # back up first
+free-fleet db backup free-fleet.db.bak  # back up with the OLD CLI first (SQLite backup API, WAL-safe)
 mv free-fleet.db harness-fleet.db
 harness-fleet setup --workspace-root .   # re-installs the skill
 harness-fleet mcp install                # re-installs client configs

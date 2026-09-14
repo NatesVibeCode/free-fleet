@@ -81,21 +81,14 @@ pythonpath = ["."]
 target-version = "py310"
 
 [tool.ruff.lint]
+# Curated: no S/BLE/TRY/SIM churn, no line-length. E731/N/B905 findings are
+# fixed, not waived; PLR0124 marks only the two intentional NaN checks.
 select = ["E", "F", "I", "N", "UP", "B", "PLR0124"]
 ignore = ["E501"]
 
 [tool.mypy]
 python_version = "3.10"
 warn_unused_ignores = true
-
-[[tool.mypy.overrides]]
-module = [
-    "harness_fleet.providers.*",
-    "harness_fleet.cli",
-    "harness_fleet.mcp_server",
-    "harness_fleet.setup",
-]
-ignore_errors = true
 
 [[tool.mypy.overrides]]
 module = ["ddgs.*", "pdfminer.*", "pypdf", "jsonschema"]

@@ -12,7 +12,12 @@ from __future__ import annotations
 from pathlib import Path
 from typing import Any
 
-from .harness import CLIHarnessProvider, HarnessSpec, parse_json_object_stdout
+from .harness import (
+    CLIHarnessProvider,
+    HarnessSpec,
+    parse_json_object_stdout,
+    run_error_receipt,
+)
 
 GROK_SPEC = HarnessSpec(
     name="grok",
@@ -40,7 +45,8 @@ class GrokProvider(CLIHarnessProvider):
         workdir: Path | None = None,
     ) -> list[str]:
         # No --model in the documented headless recipe: the CLI default serves.
-        assert prompt_file is not None
+        if prompt_file is None:
+            raise RuntimeError("grok prompt staging failed")
         return [
             "--cwd", str(workspace or Path.cwd()),
             "--prompt-file", prompt_file,
@@ -55,15 +61,8 @@ class GrokProvider(CLIHarnessProvider):
         stderr: str,
         receipt: dict[str, Any],
         started: float,
+        workdir: Path | None = None,
     ) -> tuple[bool, str | None, dict[str, Any]]:
         if code != 0:
-            err_msg = (stderr or stdout)[-500:] or f"Exit code {code}"
-            receipt["error"] = err_msg
-            receipt["error_type"] = (
-                "rate_limit" if ("429" in err_msg.lower() or "rate limit" in err_msg.lower())
-                else "inference_error"
-            )
-            if receipt["error_type"] == "rate_limit":
-                receipt["retry_after"] = 10.0
-            return False, None, receipt
+            return run_error_receipt(code, stdout, stderr, receipt=receipt)
         return parse_json_object_stdout(stdout, receipt=receipt)

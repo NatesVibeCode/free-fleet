@@ -29,9 +29,9 @@ jobs:
       - name: Run tests
         run: python -m pytest -q
       - name: Ruff gate (curated select, no format)
-        run: python -m pip install ruff && python -m ruff check harness_fleet/ tests/
+        run: python -m pip install "ruff==0.16.7" && python -m ruff check harness_fleet/ tests/
       - name: Mypy baseline gate (no strict)
-        run: python -m pip install mypy && python -m mypy harness_fleet/
+        run: python -m pip install "mypy==2.3.1" && python -m mypy harness_fleet/
       - name: Check shared route-policy contract
         run: python scripts/check_harness_drift.py --self
       - name: Verify clean installed wheel

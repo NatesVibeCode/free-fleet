@@ -4,7 +4,7 @@ from __future__ import annotations
 import os
 import shutil
 from pathlib import Path
-from typing import Annotated
+from typing import Annotated, Any
 
 from mcp.server.fastmcp import FastMCP
 from pydantic import Field
@@ -136,7 +136,7 @@ def create_mcp_server(workspace_root: str | Path, db_path: str | Path | None = N
     def harness_fleet_tasks() -> TasksResult:
         """List the current registered task names and their exact revision IDs."""
         tasks = store.list_tasks()
-        return TasksResult(tasks=tasks, count=len(tasks))
+        return TasksResult(tasks=tasks, count=len(tasks))  # type: ignore[arg-type]
 
     @server.tool(structured_output=True)
     def harness_fleet_save_profile(profile: IdealCompanyProfile) -> ProfileResult:
@@ -250,8 +250,8 @@ def create_mcp_server(workspace_root: str | Path, db_path: str | Path | None = N
             return iter_input_items(input_file, **input_options)
 
         if profile_path:
-            profile = IdealCompanyProfile.load(workspace.path(profile_path, exists=True))
-            profile_revision_id = store.save_profile(profile)
+            profile: IdealCompanyProfile | None = IdealCompanyProfile.load(workspace.path(profile_path, exists=True))
+            profile_revision_id: str | None = store.save_profile(profile)
         elif use_active_profile:
             profile_revision_id = store.active_profile_revision_id("ideal_company")
             profile = store.load_profile("ideal_company") if profile_revision_id else None
@@ -371,7 +371,7 @@ def create_mcp_server(workspace_root: str | Path, db_path: str | Path | None = N
         kind: Annotated[str, Field(pattern="^(task|input|candidate-output|output|packet|profile|database)$")],
     ) -> SchemaResult:
         """Return an admitted JSON Schema or the authoritative SQLite schema."""
-        models = {
+        models: dict[str, Any] = {
             "task": TaskSpec,
             "input": InputItem,
             "candidate-output": CandidateModelOutput,
@@ -385,7 +385,7 @@ def create_mcp_server(workspace_root: str | Path, db_path: str | Path | None = N
             if kind == "database"
             else models[kind].model_json_schema(by_alias=True)
         )
-        return SchemaResult(kind=kind, schema_document=document)
+        return SchemaResult(kind=kind, schema_document=document)  # type: ignore[arg-type]
 
     @server.tool(structured_output=True)
     def harness_fleet_doctor() -> DoctorReport:
@@ -396,7 +396,7 @@ def create_mcp_server(workspace_root: str | Path, db_path: str | Path | None = N
         routes = catalog.get_routes(free_only=True)
         openrouter = bool(os.environ.get("OPENROUTER_API_KEY"))
         checks = [
-            DoctorCheck(name="database", ok=store.schema_version() in ("1", "2", "3", "4"), detail=f"SQLite schema {store.schema_version()}"),
+            DoctorCheck(name="database", ok=store.schema_version() in ("1", "2", "3", "4", "5"), detail=f"SQLite schema {store.schema_version()}"),
             *(
                 DoctorCheck(
                     name=spec.name,

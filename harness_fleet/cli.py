@@ -260,7 +260,7 @@ def cmd_profile(args: argparse.Namespace) -> None:
     elif profile_exists:
         profile = IdealCompanyProfile.load(profile_path)
     else:
-        profile = store.load_profile()
+        profile = store.load_profile()  # type: ignore[assignment]
         if profile is None:
             raise FileNotFoundError(
                 f"No Ideal Company Profile found at {profile_path} or in {store.path}. Use 'account-fleet profile --init'."
@@ -515,7 +515,7 @@ def cmd_validate(args: argparse.Namespace) -> None:
     total_slices = 0
     for b in iter_packed_batches(_iter_input(args), task.batch_size, task.max_slice_chars):
         batch_count += 1
-        for itm in b.get("items", b.get("items", [])) if isinstance(b, dict) else []:
+        for itm in b.get("items", b.get("items", [])) if isinstance(b, dict) else []:  # type: ignore[union-attr]
             total_items += 1
             slices = itm.get("slices", []) if isinstance(itm, dict) else []
             total_slices += len(slices)
@@ -853,7 +853,7 @@ def cmd_export(args: argparse.Namespace) -> None:
 
 
 def cmd_schema(args: argparse.Namespace) -> None:
-    models = {
+    models: dict[str, Any] = {
         "task": TaskSpec,
         "input": InputItem,
         "candidate-output": CandidateModelOutput,
@@ -897,7 +897,7 @@ def cmd_doctor(args: argparse.Namespace) -> None:
     observed_routes = catalog.get_routes(free_only=True)
     openrouter_key = bool(os.environ.get("OPENROUTER_API_KEY"))
     checks = [
-        DoctorCheck(name="database", ok=store.schema_version() in ("1", "2", "3", "4"), detail=f"SQLite schema {store.schema_version()} at {store.path.resolve()}"),
+        DoctorCheck(name="database", ok=store.schema_version() in ("1", "2", "3", "4", "5"), detail=f"SQLite schema {store.schema_version()} at {store.path.resolve()}"),
         *(
             DoctorCheck(
                 name=spec.name,

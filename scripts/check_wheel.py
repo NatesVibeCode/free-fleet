@@ -45,6 +45,9 @@ def main():
         setup = run("setup", "--workspace-root", str(workspace))
         assert Path(setup["stdio_server"]["command"]).parent.resolve() == bindir.resolve(), setup["stdio_server"]
         assert (workspace / ".agents/skills/harness-fleet/SKILL.md").is_file()
+        preset = run("init", "score-smoke", "--preset", "score")
+        assert preset["revision"]
+        assert any(task["task_name"] == "score-smoke" for task in run("tasks")["tasks"])
         demo = run("quickstart", "--demo", "--run-id", "portable-demo")
         assert demo["verified"] == 10
         run("export", "portable-demo", "--format", "csv", "--sort-by", "score", "--desc", "--top", "2", "--rank", "--output", "ranked.csv")

@@ -103,8 +103,10 @@ def parse_opencode_events(
 
 class OpenCodeProvider(CLIHarnessProvider):
     def __init__(self, runner: OpenCodeRunner | None = None):
-        super().__init__(OPENCODE_SPEC, runner=None)  # type: ignore[arg-type]
-        self.runner = runner or LocalOpenCodeCLI()
+        super().__init__(OPENCODE_SPEC)
+        # Narrower than the base HarnessRunner: _invoke bridges the legacy
+        # (task_config, args) protocol, so the base runner is never used here.
+        self.runner: OpenCodeRunner = runner or LocalOpenCodeCLI()  # type: ignore[assignment]
 
     def _preflight(self) -> str | None:
         # Legacy flow: no binary probe here. A missing binary surfaces as a
@@ -151,7 +153,8 @@ class OpenCodeProvider(CLIHarnessProvider):
         task_config: dict[str, Any] | None,
         timeout_sec: int,
     ) -> tuple[int, str, str]:
-        assert task_config is not None
+        if task_config is None:
+            raise RuntimeError("opencode task config staging failed")
         return self.runner.run(
             task_config=task_config,
             args=argv[1:],
@@ -166,6 +169,7 @@ class OpenCodeProvider(CLIHarnessProvider):
         stderr: str,
         receipt: dict[str, Any],
         started: float,
+        workdir: Path | None = None,
     ) -> tuple[bool, str | None, dict[str, Any]]:
         return parse_opencode_events(stdout, stderr, code, receipt=receipt)
 

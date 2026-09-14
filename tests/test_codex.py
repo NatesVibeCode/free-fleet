@@ -65,6 +65,27 @@ def test_nonzero_exit_is_error_receipt():
     assert receipt["error_type"] == "rate_limit"
 
 
+def test_final_file_is_fallback_when_stdout_has_no_text(tmp_path):
+    (tmp_path / "final.md").write_text("file-only message", encoding="utf-8")
+    from harness_fleet.providers.codex import parse_codex_jsonl
+
+    receipt: dict = {"status": "failed", "cost": None, "cost_status": "unknown",
+                     "usage": None, "error": None, "error_type": None}
+    ok, text, receipt = parse_codex_jsonl("", "", 0, receipt=receipt, workdir=tmp_path)
+    assert ok is True and text == "file-only message"
+    assert receipt["status"] == "complete"
+
+
+def test_final_file_ignored_on_nonzero_exit(tmp_path):
+    (tmp_path / "final.md").write_text("stale", encoding="utf-8")
+    from harness_fleet.providers.codex import parse_codex_jsonl
+
+    receipt: dict = {"status": "failed", "cost": None, "cost_status": "unknown",
+                     "usage": None, "error": None, "error_type": None}
+    ok, text, _ = parse_codex_jsonl("", "bad", 1, receipt=receipt, workdir=tmp_path)
+    assert ok is False and text is None
+
+
 def test_timeout_receipt():
     import subprocess
 

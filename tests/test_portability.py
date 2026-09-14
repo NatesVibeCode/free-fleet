@@ -87,7 +87,6 @@ def test_doctor_uses_selected_workspace_and_accepts_local_provider(tmp_path, mon
     monkeypatch.delenv("OPENROUTER_API_KEY", raising=False)
     monkeypatch.delenv("OLLAMA_BASE_URL", raising=False)
     monkeypatch.delenv("HARNESS_FLEET_DB", raising=False)
-    monkeypatch.delenv("HARNESS_FLEET_DB", raising=False)
     catalog = RouteCatalog(db_path=tmp_path / "harness-fleet.db")
     catalog.add_route("ollama/model", "ollama", 0, 0)
     cmd_doctor(build_parser().parse_args(["doctor", "--workspace-root", str(tmp_path), "--json"]))

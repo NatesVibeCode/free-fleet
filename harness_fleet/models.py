@@ -187,7 +187,7 @@ def score_to_fit_tier(score: Any) -> str:
         value = float(score)
     except (TypeError, ValueError) as exc:
         raise ValueError(f"score {score!r} is not numeric") from exc
-    if value != value or value in (float("inf"), float("-inf")):  # noqa: PLR0124
+    if value != value or value in (float("inf"), float("-inf")):  # noqa: PLR0124  # NaN check is intentional
         raise ValueError(f"score {score!r} is not finite")
     for threshold, tier in TIER_BY_SCORE:
         if value >= threshold:
@@ -451,7 +451,7 @@ class TaskSpec(ClosedModel):
             value = float(score)
         except (TypeError, ValueError) as exc:
             raise ValueError(f"score {score!r} is not numeric") from exc
-        if value != value or value in (float("inf"), float("-inf")):  # noqa: PLR0124
+        if value != value or value in (float("inf"), float("-inf")):  # noqa: PLR0124  # NaN check is intentional
             raise ValueError(f"score {score!r} is not finite")
         return value >= self.pass_score
 

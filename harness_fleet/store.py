@@ -27,7 +27,7 @@ from .models import (
     WorkerSessionRecord,
 )
 
-SCHEMA_VERSION = "4"
+SCHEMA_VERSION = "5"
 STREAMING_INPUT_DIGEST = "__streaming_input_pending__"
 MAX_NON_COUNTING_RETRIES = 12
 
@@ -292,9 +292,7 @@ class HarnessStore:
                 "('free_fleet_task_v1','bulk_lanes_task_v1')"
             ).fetchone()[0]
             if needs_check_rebuild:
-                import re as _re
-
-                new_sql = _re.sub(
+                new_sql = re.sub(
                     r"CHECK\s*\(\s*format_version\s+IN\s*\([^)]*\)\s*\)",
                     "CHECK(format_version IN ('harness_fleet_task_v1'))",
                     task_sql,
@@ -302,14 +300,18 @@ class HarnessStore:
                 )
                 # Retarget the DDL at a build table; the live table keeps its
                 # name until the rebuilt copy is verified.
-                new_sql = _re.sub(
+                new_sql = re.sub(
                     r"CREATE\s+TABLE\s+(IF\s+NOT\s+EXISTS\s+)?task_revisions\b",
                     "CREATE TABLE task_revisions_new",
                     new_sql,
                     count=1,
-                    flags=_re.IGNORECASE,
+                    flags=re.IGNORECASE,
                 )
                 connection.execute("PRAGMA foreign_keys=OFF")
+                # SAVEPOINT (not BEGIN: a transaction may already be open) so
+                # the DROP->RENAME window is atomic: any failure below leaves
+                # the live task_revisions untouched.
+                connection.execute("SAVEPOINT harness_cutover")
                 try:
                     connection.execute("DROP TABLE IF EXISTS task_revisions_new")
                     connection.execute(new_sql)
@@ -333,6 +335,11 @@ class HarnessStore:
                     )
                     connection.execute("DROP TABLE task_revisions")
                     connection.execute("ALTER TABLE task_revisions_new RENAME TO task_revisions")
+                    connection.execute("RELEASE harness_cutover")
+                except Exception:
+                    connection.execute("ROLLBACK TO harness_cutover")
+                    connection.execute("RELEASE harness_cutover")
+                    raise
                 finally:
                     connection.execute("PRAGMA foreign_keys=ON")
                 # Re-create the append-only triggers dropped with the old table.

@@ -76,7 +76,7 @@ class OpenRouterProvider(BaseProvider):
         # Route id can be "openrouter/foo/bar:free" or "foo/bar:free"
         model_name = route_id.removeprefix("openrouter/").removeprefix("openrouter:")
         
-        receipt = {
+        receipt: dict[str, Any] = {
             "id": rid,
             "session_id": session_id,
             "provider": "openrouter",
@@ -114,7 +114,7 @@ class OpenRouterProvider(BaseProvider):
             "temperature": 0.1,
         }
 
-        provider_cfg = {}
+        provider_cfg: dict[str, Any] = {}
         if policy:
             if getattr(policy, "zdr", False) or not getattr(policy, "allow_data_collection", True):
                 provider_cfg["data_collection"] = "deny"

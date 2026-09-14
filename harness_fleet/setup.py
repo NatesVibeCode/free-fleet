@@ -6,7 +6,7 @@ import os
 import shutil
 import sys
 from pathlib import Path
-from typing import Literal
+from typing import Any, Literal
 
 from .catalog import RouteCatalog
 from .models import SetupAction, SetupReport, StdioServerConfig
@@ -61,7 +61,7 @@ def _install_skill(source: Path, destination: Path, *, dry_run: bool, force: boo
         raise FileExistsError(
             f"a different skill already exists at {destination}; rerun with --force to update managed files"
         )
-    status = "planned" if dry_run else ("updated" if destination.exists() else "created")
+    status: Literal["planned", "created", "updated", "unchanged", "skipped"] = ("planned" if dry_run else ("updated" if destination.exists() else "created"))
     if not dry_run:
         if destination.exists():
             # A forced update owns the managed skill directory. Replacing it
@@ -72,21 +72,32 @@ def _install_skill(source: Path, destination: Path, *, dry_run: bool, force: boo
     return SetupAction(kind="skill", status=status, path=str(destination))
 
 
+def _cli_search_names() -> list[str]:
+    """Product CLIs to search, preferred entry first.
+
+    Each distribution ships its own script but this module is byte-identical
+    across repos, so every product name is searched. The invoking product
+    goes first; pyproject [project.scripts] stays per-repo.
+    """
+    names = ["harness-fleet", "account-fleet", "career-fleet", "career-lanes"]
+    invoked = Path(sys.argv[0]).stem.lower()
+    if invoked in names:
+        names.insert(0, names.pop(names.index(invoked)))
+    return names
+
+
 def installed_cli_path() -> str:
-    # Unified entry-point search: each distribution ships its own script, but
-    # this module is byte-identical across repos, so every product name is
-    # searched here. pyproject [project.scripts] stays per-repo.
     for directory in (Path(sys.executable).absolute().parent, Path(sys.prefix) / "Scripts"):
-        for name in ("harness-fleet", "account-fleet", "career-fleet", "career-lanes"):
+        for name in _cli_search_names():
             for suffix in (".exe", "") if sys.platform == "win32" else ("",):
                 sibling = directory / (name + suffix)
                 if sibling.is_file():
                     return str(sibling)
-    for name in ("harness-fleet", "account-fleet", "career-fleet", "career-lanes"):
+    for name in _cli_search_names():
         discovered = shutil.which(name)
         if discovered:
             return str(Path(discovered).resolve())
-    return "harness-fleet"
+    return _cli_search_names()[0]
 
 
 def setup_workspace(
@@ -130,7 +141,7 @@ def setup_workspace(
     actions = [_install_skill(bundled_skill_path(), destination, dry_run=dry_run, force=force)]
     if account_source.is_dir():
         actions.append(_install_skill(account_source, destination.parent / "account-fleet", dry_run=dry_run, force=force))
-    refresh_result: dict[str, int | str] | None = None
+    refresh_result: dict[str, Any] | None = None
     if dry_run:
         actions.append(SetupAction(kind="database", status="planned", path=str(database)))
         actions.append(SetupAction(

@@ -276,7 +276,7 @@ def export_clean_packet(
             if batch.get("receipt")
         ]
     total_tokens = sum(
-        int(receipt.usage.get("total_tokens", 0))  # type: ignore
+        int(receipt.usage.get("total_tokens", 0))  # type: ignore[arg-type, misc]
         for receipt in receipts
         if isinstance(receipt.usage, dict)
     )

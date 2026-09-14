@@ -135,7 +135,7 @@ variable wins).
 harness-fleet schema database
 ```
 
-The queue uses WAL, foreign keys, busy timeout, and atomic `BEGIN IMMEDIATE` leases. Attempt and model-run evidence is retained. Schema version is `"4"`.
+The queue uses WAL, foreign keys, busy timeout, and atomic `BEGIN IMMEDIATE` leases. Attempt and model-run evidence is retained. Schema version is `"5"`.
 
 ## MCP
 

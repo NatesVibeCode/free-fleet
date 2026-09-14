@@ -87,7 +87,7 @@ def _normalized_digest(path: Path, relative: str) -> str:
     text = path.read_text(encoding="utf-8")
     if relative.endswith("references/operations.md"):
         text = re.sub(
-            r'Schema version is `?"(?:2|3|4)"`?(?:\. Account runs can also retain the exact immutable Ideal Company Profile revision used for the campaign\.)?\.?',
+            r'Schema version is `?"(?:2|3|4|5)"`?(?:\. Account runs can also retain the exact immutable Ideal Company Profile revision used for the campaign\.)?\.?',
             'Schema version is `"shared"`.',
             text,
         )

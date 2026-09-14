@@ -26,36 +26,18 @@ from typing import Any, Literal, Protocol
 
 from pydantic import model_validator
 
-from ..models import ClosedModel, ProviderReceipt, RoutePolicy
+from ..models import (
+    ClosedModel,
+    MalformedRouteError,
+    ProviderReceipt,
+    RouteId,
+    RoutePolicy,
+)
 from .base import BaseProvider
 
 PromptDelivery = Literal["argv_last", "stdin", "file_flag"]
 ParserKind = Literal["opencode_jsonl", "codex_jsonl", "json_object"]
 TaskConfigStrategy = Literal["opencode_deny_all", "cursor_sandbox_enabled", "none"]
-
-
-class MalformedRouteError(ValueError):
-    """A harness route id failed structural validation."""
-
-
-def split_route(route_id: str) -> tuple[str, str]:
-    """Split ``head/remainder`` (or ``head:remainder``) with validation.
-
-    This is the single place harness model derivation parses route ids,
-    except OpenCode, which keeps its tested native-prefix rule as an
-    override of ``derive_model``. Blank ids and ids without a ``/`` or
-    ``:`` separator raise ``MalformedRouteError``; adapters fail closed.
-    """
-    if not isinstance(route_id, str) or not route_id.strip():
-        raise MalformedRouteError(f"malformed harness route id: {route_id!r}")
-    text = route_id.strip()
-    for separator in ("/", ":"):
-        if separator in text:
-            head, _, remainder = text.partition(separator)
-            if head and remainder:
-                return head, remainder
-            raise MalformedRouteError(f"malformed harness route id: {route_id!r}")
-    raise MalformedRouteError(f"malformed harness route id: {route_id!r}")
 
 
 class HarnessSpec(ClosedModel):
@@ -188,11 +170,13 @@ class CLIHarnessProvider(BaseProvider):
         self.runner = runner or LocalHarnessCLI()
 
     def _new_receipt(self, route_id: str, session_id: str | None) -> ProviderReceipt:
+        # Total constructor: foreign callers may pass non-strings, and the
+        # receipt must still exist for the fail-closed handlers below.
         return ProviderReceipt(
             id=uuid.uuid4().hex,
             session_id=session_id,
             provider=self.spec.name,
-            requested_route=route_id,
+            requested_route=route_id if isinstance(route_id, str) else repr(route_id),
             status="failed",
         )
 
@@ -213,8 +197,10 @@ class CLIHarnessProvider(BaseProvider):
             if not remainder:
                 _, _, remainder = route_id.partition(":")
             return remainder
-        _, remainder = split_route(route_id)
-        return remainder
+        parsed = RouteId.parse(route_id)
+        if parsed.model is None:
+            raise MalformedRouteError(f"malformed harness route id: {route_id!r}")
+        return parsed.model
 
     def build_argv(
         self,
@@ -274,6 +260,9 @@ class CLIHarnessProvider(BaseProvider):
         prompt_file: str | None = None
         workdir: Path | None = None
         try:
+            # Fail fast on blank/structural garbage, including for adapters
+            # that ignore the model (their derive_model would not raise).
+            RouteId.parse(route_id)
             problem = self._preflight()
             if problem is not None:
                 receipt.error = problem

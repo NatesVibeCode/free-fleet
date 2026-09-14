@@ -36,6 +36,15 @@ def test_unknown_provider_fails_closed_with_available_names():
             assert spec.name in str(exc_info.value)
 
 
+def test_resolve_accepts_route_id_by_provider():
+    from harness_fleet.models import RouteId
+
+    registry = ProviderRegistry()
+    assert registry.resolve(RouteId.parse("codex/some-model")) is registry.get("codex")
+    with pytest.raises(ProviderResolutionError):
+        registry.resolve(RouteId(provider="nope", model="x"))
+
+
 def test_no_prefix_substring_or_default_resolution():
     registry = ProviderRegistry()
     # Route ids never dispatch: only the explicit provider field resolves.

@@ -764,6 +764,49 @@ class ProviderReceipt(ClosedModel):
         return self
 
 
+class MalformedRouteError(ValueError):
+    """A harness route id failed structural validation."""
+
+
+class RouteId(ClosedModel):
+    """Parsed harness route identity: provider plus optional model.
+
+    Both legacy spellings (``provider/model`` and ``provider:model``) parse
+    to the same value for simple ids; when both separators appear, ``/``
+    wins (historical rule, preserved). Bare provider ids carry
+    ``model=None`` — adapters whose spec ignores the model accept them,
+    others reject them in ``derive_model``. Storage and comparison keep
+    using raw strings; this type validates at parse boundaries only.
+    """
+
+    provider: str = Field(min_length=1)
+    model: str | None = Field(default=None, min_length=1)
+
+    def __str__(self) -> str:
+        return f"{self.provider}/{self.model}" if self.model else self.provider
+
+    @classmethod
+    def parse(cls, route_id: str) -> RouteId:
+        """Split a route id with validation.
+
+        Blank ids and ids with an empty provider or model part raise
+        ``MalformedRouteError``; callers fail closed. This is the single
+        place harness model derivation parses route ids, except OpenCode,
+        which keeps its tested native-prefix rule as an override of
+        ``derive_model``.
+        """
+        if not isinstance(route_id, str) or not route_id.strip():
+            raise MalformedRouteError(f"malformed harness route id: {route_id!r}")
+        text = route_id.strip()
+        for separator in ("/", ":"):
+            if separator in text:
+                head, _, remainder = text.partition(separator)
+                if head and remainder:
+                    return cls(provider=head, model=remainder)
+                raise MalformedRouteError(f"malformed harness route id: {route_id!r}")
+        return cls(provider=text, model=None)
+
+
 def coerce_receipt(value: ProviderReceipt | dict[str, Any]) -> ProviderReceipt:
     """Carrier coercion for the live provider path.
 

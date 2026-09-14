@@ -6,13 +6,13 @@ from typing import Any
 
 import pytest
 
+from harness_fleet.models import RouteId
 from harness_fleet.providers.harness import (
     CLIHarnessProvider,
     HarnessSpec,
     LocalHarnessCLI,
     MalformedRouteError,
     parse_json_object_stdout,
-    split_route,
 )
 
 
@@ -47,12 +47,27 @@ def _spec(**overrides):
     return HarnessSpec(**base)
 
 
-def test_split_route_validates_shape():
-    assert split_route("harness/model") == ("harness", "model")
-    assert split_route("harness:model") == ("harness", "model")
-    for bad in ["", "   ", "noseparator", "/leading", "trailing/"]:
+def test_route_id_parse_table():
+    assert RouteId.parse("harness/model") == RouteId(provider="harness", model="model")
+    assert RouteId.parse("harness:model") == RouteId(provider="harness", model="model")
+    assert RouteId.parse("openrouter/foo/bar:free") == RouteId(
+        provider="openrouter", model="foo/bar:free"
+    )
+    assert RouteId.parse("  harness/model  ") == RouteId(provider="harness", model="model")
+    bare = RouteId.parse("harness")
+    assert bare == RouteId(provider="harness", model=None)
+    assert str(bare) == "harness"
+    assert str(RouteId.parse("harness:model")) == "harness/model"
+    for bad in ["", "   ", "/leading", "trailing/", "a:", ":b", 123, None]:
         with pytest.raises(MalformedRouteError):
-            split_route(bad)
+            RouteId.parse(bad)
+
+
+def test_derive_model_requires_model_when_routed():
+    provider = FakeProvider(_spec(), runner=StubRunner())
+    assert provider.derive_model("fake/model") == "model"
+    with pytest.raises(MalformedRouteError):
+        provider.derive_model("noseparator")
 
 
 def test_spec_requires_file_flag_for_file_delivery():

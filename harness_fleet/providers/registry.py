@@ -3,6 +3,7 @@ from __future__ import annotations
 
 import os
 
+from ..models import RouteId
 from .antigravity import ANTIGRAVITY_SPEC, AntigravityProvider
 from .base import BaseProvider
 from .claude import CLAUDE_SPEC, ClaudeProvider
@@ -81,15 +82,17 @@ class ProviderRegistry:
     def available_providers(self) -> list[str]:
         return sorted(self._providers)
 
-    def resolve(self, provider_name: str | None) -> BaseProvider:
+    def resolve(self, provider_name: str | RouteId | None) -> BaseProvider:
         """Resolve by explicit provider name only. Anything else fails closed.
 
         Prefix-sniffing, substring matching, and silent defaults are deleted:
         routes must declare ``provider``. Unknown or missing names raise
-        ``ProviderResolutionError`` naming the available providers.
+        ``ProviderResolutionError`` naming the available providers. A
+        ``RouteId`` resolves by its provider part.
         """
-        if provider_name and provider_name.lower() in self._providers:
-            return self._providers[provider_name.lower()]
+        key = provider_name.provider if isinstance(provider_name, RouteId) else provider_name
+        if key and key.lower() in self._providers:
+            return self._providers[key.lower()]
         raise ProviderResolutionError(
             f"unknown provider {provider_name!r}; available providers: "
             f"{', '.join(self.available_providers())}"

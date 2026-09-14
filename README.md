@@ -1,54 +1,69 @@
-# free-fleet
+# account-fleet
 
-[![CI](https://github.com/NatesVibeCode/free-fleet/actions/workflows/ci.yml/badge.svg)](https://github.com/NatesVibeCode/free-fleet/actions/workflows/ci.yml)
+[![CI](https://github.com/NatesVibeCode/account-fleet/actions/workflows/ci.yml/badge.svg)](https://github.com/NatesVibeCode/account-fleet/actions/workflows/ci.yml)
 [![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
 [![Python 3.10+](https://img.shields.io/badge/python-3.10%2B-blue.svg)](pyproject.toml)
 
-> **CSV in → source-grounded CSV out. Every record cites a verbatim quote at `[start, end]` character offsets. Quotes are checked automatically; claims and interpretations still need review.**
+> **Research and score target accounts with traceable source evidence. Quotes are checked against the source at exact character offsets. Scores and interpretations still need human review.**
 
-Coordinated fleet for high-throughput, evidence-grounded batch extraction across free, paid, and local LLMs — with SQLite checkpointing, Bayesian route scoring, and deterministic quote verification.
+Local outbound intelligence engine for high-throughput, evidence-grounded account research across free, paid, and local LLMs — with SQLite checkpointing, 4-layer compounding funnels, and deterministic quote verification.
 
-*Canonical CLI is `free-fleet`. `bulk-lanes` remains as a deprecated shim (removed in 0.3.0).*
+*Canonical CLI is `harness-fleet`. (The `account-fleet` research CLI ships separately from the account-fleet distribution — install one fleet per environment.)*
+
+## Migrating from free-fleet
+
+Version 0.3.0 renames the `free-fleet` distribution to `harness-fleet` (the old `bulk-lanes` name is gone). Back up your database first, then:
+
+```bash
+free-fleet db backup free-fleet.db.bak  # back up with the OLD CLI first (SQLite backup API, WAL-safe)
+mv free-fleet.db harness-fleet.db
+harness-fleet setup --workspace-root .   # re-installs the skill
+harness-fleet mcp install                # re-installs client configs
+```
+
+Old packets (`free_fleet_v2` / `bulk_lanes_v2`) no longer read; re-export them from SQLite before upgrading. The `FREE_FLEET_DB` / `BULK_LANES_DB` / `ACCOUNT_FLEET_DB` variables are replaced by the single `HARNESS_FLEET_DB`. There is no downgrade path — restore your backup to go back.
+
+Python 3.10+ is required. This is a command-line tool with an optional AI-assistant integration. It scores source text you supply; the CLI does not browse for companies or fetch job postings automatically. The bundled account-fleet skill guides a connected assistant through that research.
+
+Install and try the offline demo below before running a real list. Real research requires a configured model provider and your own qualification criteria.
 
 ---
 
-## 30-Second Example: CSV In, Verified CSV Out
+## 30-Second Example: Raw Accounts In → Scored, Grounded CSV Out
 
-Suppose you have customer feedback in `feedback.csv`:
-
-```csv
-id,comment
-fb_1,"The onboarding was smooth, but the checkout button gave a 500 error."
-fb_2,"Fast shipping and the packaging was completely recyclable."
-fb_3,"Customer support never answered my email about the missing invoice."
-```
-
-### 1. Initialize a task and run
-
-```bash
-# Initialize a typed triage task preset (priority, reason, grounded quotes)
-free-fleet init customer-triage --preset triage
-
-# Process the CSV using intelligent model routing
-free-fleet run customer-triage --input feedback.csv --id-column id --text-column comment --run-id triage-01
-```
-
-### 2. Export verified results
-
-```bash
-free-fleet export triage-01 --format csv --output results.csv
-```
-
-### 3. Output (`results.csv`)
+Suppose you have a list of target companies in `accounts.csv`:
 
 ```csv
-item_id,priority,reason,primary_quote_text,quote_count,source_uri,source_digest
-fb_1,high,"Checkout button failure blocks user purchase","checkout button gave a 500 error",1,"",a8f110...
-fb_2,low,"Positive customer feedback on eco packaging","packaging was completely recyclable",1,"",4c2b81...
-fb_3,medium,"Support request regarding invoice remains unanswered","never answered my email about the missing invoice",1,"",9e11fd...
+company,careers_text
+stripe.com,"We are hiring a Staff Engineer to lead migration off legacy v1 billing pipeline to Kafka..."
+hyper_ai,"Looking for Senior Backend Engineer hitting latency limits at 50k QPS on Postgres cluster..."
+pinecone.io,"Hiring Infrastructure Engineer scaling vector search across multi-tenant clusters..."
 ```
 
-Outputs contain structured claims paired with verbatim quotes deterministically verified against the raw source text.
+### 1. Initialize the account research preset and run
+
+```bash
+# Initialize the typed account-research preset (evidence checklist, identified_gap; score/fit_tier derived)
+account-fleet init research-demo --preset account-research
+
+# Process the accounts through free model routes (zero API spend)
+account-fleet run research-demo --input accounts.csv --id-column company --text-column careers_text --run-id campaign-01
+```
+
+### 2. Export the top 25 ranked accounts
+
+```bash
+account-fleet export campaign-01 --format csv --sort-by score --desc --top 25 --rank --output ranked_accounts.csv
+```
+
+### 3. Output (`ranked_accounts.csv`)
+
+```csv
+rank,item_id,score,identified_gap,fit_tier,primary_quote_text
+1,stripe.com,92,"Legacy billing migration",tier_1,"lead migration off legacy v1 billing pipeline to Kafka"
+```
+
+Illustrative values only; real exports also include source URLs, digests, and quote details. Set your ICP and scoring rubric through `init --instructions` or a task JSON file. An exact source quote proves the text exists, not that a company will buy your product.
 
 ---
 
@@ -56,63 +71,78 @@ Outputs contain structured claims paired with verbatim quotes deterministically 
 
 Every output row is gated through deterministic checks *before* it is committed to SQLite. If any check fails, the batch rotates to the next route — nothing unverified is exported.
 
-1. **Deterministic Quote Verification**: Cited quotes are checked against the raw source text at character-level precision and resolved to canonical `[start, end]` offsets. Fabricated or altered quotes fail grounding and trigger immediate route rotation. *(This proves all cited quotes are verbatim source substrings; whether a claim is truly entailed by its quote remains model-generated.)*
+1. **Deterministic Quote Verification**: Cited quotes are checked against the raw source text at character-level precision and resolved to canonical `[start, end]` offsets. Sections with evidence terms also expose numbered candidate spans the worker cites by id instead of free-searching; verification recomputes the same span table, so offsets are code-owned. Fabricated or altered quotes fail grounding and trigger immediate route rotation. *(This proves all cited quotes are verbatim source substrings; whether a claim is truly entailed by its quote remains model-generated.)*
 2. **Closed JSON Schemas**: Outputs adhere strictly to closed JSON Schemas defined in `TaskSpec`. Models cannot add fields, emit markdown, or drift out of schema.
-3. **Intelligent Route Scoring**: Bayesian-smoothed scoring by verification rate, grounding accuracy, malformed-JSON rate, and latency — not round-robin. Best routes are tried first.
-4. **Non-Destructive Rate-Limit Handling**: On `429` or `5xx`, the route is cooled down and the batch is retried immediately on the next lane with **0 attempt burn**.
-5. **Zero-Price Circuit Breaker & Spend Ceilings**: For zero-price runs, pricing is observed from provider receipts; a non-zero charge trips the breaker and disables the route. For paid runs, `--max-request-cost` enforces per-request caps.
+3. **Derived Scores and Tiers, Not Double Judgment**: Scoring tasks collect an evidence-bound `checklist` of true/false answers, and the pipeline computes `score` (summed points, capped at 100), `fit_tier` (85+ → `tier_1`, 70+ → `tier_2`, 50+ → `tier_3`, else `unfit`), and `passed`. A mismatched derived value fails validation and rotates routes.
+4. **Weighted, Time-Decayed Evidence**: Every true answer needs a supporting quote tagged with `supports`, and each answer scores its points scaled by source weight (configurable per-domain rules, longest match wins) and recency decay (per-item half-lives — hiring signals stale in weeks, company fundamentals in months). Untagged truth scores zero, so weak evidence can only lower a score, never inflate one.
+5. **Intelligent Route Scoring**: Bayesian-smoothed scoring by verification rate, grounding accuracy, malformed-JSON rate, and latency — not round-robin. Best routes are tried first.
+6. **Non-Destructive Rate-Limit Handling**: On `429` or `5xx`, the route is cooled down and the batch is retried immediately on the next lane with **0 attempt burn**.
+7. **Rescore Lineage, Not Overwrites**: Fresh evidence arrives as new runs linked by `parent_run_id`; every verified record lands in `score_history`, and `harness-fleet history ENTITY` shows the score trajectory across rounds. Old scores are never rewritten — a stale 40 stays visible next to the new 85 and the evidence that moved it.
+8. **Zero-Price Circuit Breaker & Spend Ceilings**: For zero-price runs, pricing is observed from provider receipts; a non-zero charge trips the breaker and disables the route. For paid runs, `--max-request-cost` enforces per-request caps. Cost ceilings fail closed on undeclared pricing.
 
-> **Live proof:** `free-fleet status <run_id> --watch` streams batch progress and per-route `Verified / Rate limits / Latency`. Fabricated quotes show up instantly as `grounding_failed` and the next lane is tried.
+> **Live proof:** `harness-fleet status <run_id> --watch` streams batch progress and per-route `Verified / Rate limits / Latency`. Fabricated quotes show up instantly as `grounding_failed` and the next lane is tried.
 
 ---
 
 ## Quickstart — 60-Second Demo (No API Keys)
 
 ```bash
-git clone https://github.com/NatesVibeCode/free-fleet.git
-python3 -m pip install ./free-fleet
+git clone https://github.com/NatesVibeCode/account-fleet.git
+cd account-fleet
+python3 -m venv .venv
+source .venv/bin/activate
+python -m pip install .
 
-# Deterministic offline demo: writes in the current workspace, registers a fake
-# zero-cost route, runs the bundled examples, and writes a verified packet + CSV.
-free-fleet quickstart --demo --run-id demo-01
+# Run in your own workspace; output files are written in the current directory.
+mkdir my-workspace
+cd my-workspace
+account-fleet setup
+account-fleet quickstart --demo --run-id demo-01
 
 # Outputs:
 #   runs/demo-01/clean_packet.json   (self-validating packet)
 #   runs/demo-01/clean_packet.csv    (flat CSV)
 ```
 
-Use Python 3.10+ in a virtual environment. The demo makes no model API calls and is excluded from real campaigns unless explicitly selected. It checks the pipeline, not model quality.
+On Windows PowerShell, replace the two virtual-environment commands with `py -m venv .venv` and `.venv\Scripts\Activate.ps1`. If activation is restricted, run `..\.venv\Scripts\account-fleet.exe` directly from `my-workspace`.
 
-Named providers use their own environment variables (for example `OLLAMA_BASE_URL` or `GROQ_API_KEY`). `OPENAI_COMPATIBLE_BASE_URL` and `OPENAI_COMPATIBLE_API_KEY` configure only `--provider openai_compatible`. `.env` files are not loaded automatically. Install the account-fleet fork in a separate virtual environment because both distributions share a Python package and CLI aliases.
+The demo uses synthetic scores for ten bundled sample accounts and makes no model API calls. It verifies installation and export, not research quality. Demo routes are excluded from real campaigns unless explicitly selected.
 
 ### Real Workspace
 
 ```bash
 mkdir my-workspace && cd my-workspace
-free-fleet setup --workspace-root "$PWD" --refresh-routes
+account-fleet setup --workspace-root . --refresh-routes
 ```
+
+For a real run, configure one of the seven CLI harnesses (`opencode`, `claude`, `codex`, `cursor`, `grok`, `muse`, `antigravity`) with your own provider access, set `OPENROUTER_API_KEY`, or register a running local model, for example `account-fleet routes add ollama/your-installed-model --provider ollama --free`. Refreshing routes alone does not authenticate you. `account-fleet doctor` checks configuration; `account-fleet test research-demo --input accounts.csv --id-column company --text-column careers_text --provider ollama` tests a real batch before a large campaign.
+
+Each named provider uses its own settings: `OLLAMA_BASE_URL`, `LMSTUDIO_BASE_URL`, `GROQ_API_KEY`, and so on. `OPENAI_COMPATIBLE_BASE_URL` and `OPENAI_COMPATIBLE_API_KEY` configure only `--provider openai_compatible`. Environment variables must be available to the process running the CLI or MCP server; `.env` files are not loaded automatically.
+
+`setup` installs both the account-fleet research skill and the harness-fleet execution skill in the workspace's `.agents/skills` directory. Keep the virtual environment in place when using the generated MCP configuration. Install account-fleet and harness-fleet in separate environments: they share the `harness_fleet` Python package and entry-point names, so one fleet per environment.
 
 ### Presets
 
 Create typed tasks instantly with built-in presets:
 
 ```bash
-free-fleet init score-demo --preset score             # Numerical 0-100 score + grounded reasoning
-free-fleet init filter-demo --preset filter           # Boolean qualification pass/fail gate
-free-fleet init triage-demo --preset triage           # Priority (high/medium/low) + reason
-free-fleet init classify-demo --preset classify       # Categorical labels + summary
-free-fleet init extract-demo --preset extract         # Named entities + summary
-free-fleet init summarize-demo --preset summarize     # Supported fact summaries
+harness-fleet init score-demo --preset score             # Evidence checklist + pipeline-derived 0-100 score
+harness-fleet init filter-demo --preset filter           # Boolean qualification pass/fail gate
+harness-fleet init account-demo --preset account-research # Evidence checklist + derived ICP score/tier + gap extraction
+harness-fleet init triage-demo --preset triage           # Priority (high/medium/low) + reason
+harness-fleet init classify-demo --preset classify       # Categorical labels + summary
+harness-fleet init extract-demo --preset extract         # Named entities + summary
+harness-fleet init summarize-demo --preset summarize     # Supported fact summaries
 ```
 
 Validate and test before launching large runs:
 
 ```bash
 # Validate task spec and input without making any API calls
-free-fleet validate score-demo --input input.jsonl
+harness-fleet validate score-demo --input input.jsonl
 
 # Test a single real batch
-free-fleet test score-demo --input input.jsonl
+harness-fleet test score-demo --input input.jsonl
 ```
 
 ---
@@ -123,11 +153,11 @@ free-fleet test score-demo --input input.jsonl
 Directly process tabular data and export sorted, ranked deliverables with exact source quotes:
 
 ```bash
-# Run on CSV specifying ID and text columns (or let free-fleet auto-detect them)
-free-fleet run score-demo --input accounts.csv --run-id accts-01
+# Run on CSV specifying ID and text columns (or let harness-fleet auto-detect them)
+harness-fleet run score-demo --input accounts.csv --run-id accts-01
 
 # Export ranked deliverable: sorted by score descending, top 25, with 1-indexed rank column
-free-fleet export accts-01 --format csv --sort-by score --desc --top 25 --rank --output ranked_target_accounts.csv
+harness-fleet export accts-01 --format csv --sort-by score --desc --top 25 --rank --output ranked_target_accounts.csv
 ```
 
 ### 2. The Compounding Filter (Chaining Layers)
@@ -135,23 +165,66 @@ Run multi-stage funnel filtering without running monolithic prompts or wasting m
 
 ```bash
 # Layer 1: Filter down to survivors
-free-fleet run l1-task --input 1000_candidates.csv --run-id l1
-free-fleet export l1 --format csv --filter "passed=true" --output l1_survivors.csv
+harness-fleet run l1-task --input 1000_candidates.csv --run-id l1
+harness-fleet export l1 --format csv --filter '{"all": [{"field": "passed", "value": true}]}' --output l1_survivors.csv
 
 # Layer 2: Only run on survivor IDs from Layer 1
-free-fleet run l2-task --input tech_docs.csv --only-ids l1_survivors.csv --run-id l2
-free-fleet export l2 --format csv --filter "passed=true" --output l2_survivors.csv
+harness-fleet run l2-task --input tech_docs.csv --only-ids l1_survivors.csv --run-id l2
+harness-fleet export l2 --format csv --filter '{"all": [{"field": "passed", "value": true}]}' --output l2_survivors.csv
 
 # Final Layer: Score survivors and rank top candidates
-free-fleet run l3-task --input gap_analysis.csv --only-ids l2_survivors.csv --run-id l3
-free-fleet export l3 --format csv --sort-by score --desc --top 25 --rank --output ranked_deliverable.csv
+harness-fleet run l3-task --input gap_analysis.csv --only-ids l2_survivors.csv --run-id l3
+harness-fleet export l3 --format csv --sort-by score --desc --top 25 --rank --output ranked_deliverable.csv
 ```
+
+Filters compose deterministically at export — a ClaimFilter document with `all`
+clauses (AND), `any` branches (OR), and ops `==, !=, >=, <=, >, <, in, not_in`:
+
+```bash
+harness-fleet export l3 --format csv \
+  --filter '{"all": [{"field": "score", "op": ">=", "value": 70}, {"field": "passed", "value": true}]}' \
+  --output qualified.csv
+```
+
+Discovery pre-filters mechanically too:
+`fetch --title-include engineer --title-exclude manager --exclude-stack mainframe --min-chars 200`.
+
+### 2b. DAG Workflows (multi-stage funnels without CSV round-trips)
+Each workflow is a DAG of typed nodes — `run` (one Engine campaign = one SQLite run),
+`filter` (deterministic ID sets from a run snapshot), `export` (packet/CSV). Edges carry
+IDs and run references in-process, so funnels keep full drill-through (offsets, digests)
+at every hop instead of degrading through CSV files:
+
+```json
+{
+  "name": "funnel",
+  "nodes": [
+    {"kind": "run", "id": "l1", "task": "filter-task", "input": "candidates.csv",
+     "policy": {"allowed_routes": ["demo/fake"], "free_only": true}},
+    {"kind": "filter", "id": "l1f", "from_run": "l1",
+     "filter": {"all": [{"field": "passed", "value": true}]}, "top": 50},
+    {"kind": "run", "id": "l2", "task": "score-task", "input": "docs.csv", "ids_from": ["l1f"]},
+    {"kind": "export", "id": "out", "from_run": "l2", "format": "csv",
+     "sort": {"field": "score"}, "top": 25, "rank": true}
+  ]
+}
+```
+
+```bash
+harness-fleet dag --spec funnel.json --dry-run --json   # validate + print order
+harness-fleet dag --spec funnel.json --dag-id campaign-01 --json
+```
+
+Node run IDs are deterministic (`<dag-id>-<node-id>`), so re-running resumes completed
+`run` nodes from SQLite while `filter`/`export` re-execute. Lineage (spec digest, run IDs,
+counts, artifacts) lands in `runs/<dag-id>/dag.json`. Cycles, unknown references, and
+wrong-kind edges fail closed at parse time.
 
 ### 3. Live Run Monitoring
 Track queue progress, worker concurrency, and route-level metrics in real time:
 
 ```bash
-free-fleet status <run_id> --watch
+harness-fleet status <run_id> --watch
 ```
 
 Output:
@@ -177,7 +250,7 @@ Route Performance:
 Benchmark available routes against test datasets to determine which models excel at your specific task:
 
 ```bash
-free-fleet eval customer-triage --input test-samples.csv --id-column id --text-column comment
+harness-fleet eval customer-triage --input test-samples.csv --id-column id --text-column comment
 ```
 
 Output:
@@ -199,7 +272,7 @@ Run bulk workloads completely locally with **Ollama**, **LM Studio**, **vLLM**, 
 
 ```bash
 # Register your local or custom route in the catalog
-free-fleet routes add ollama/llama3.2:latest --provider ollama --free
+harness-fleet routes add ollama/llama3.2:latest --provider ollama --free
 
 # Or configure environment variables
 export OPENAI_COMPATIBLE_BASE_URL="http://localhost:11434/v1"
@@ -207,7 +280,7 @@ export OPENAI_COMPATIBLE_API_KEY="ollama"
 export OPENAI_COMPATIBLE_MODEL="llama3.2:latest"
 
 # Run with local provider selection
-free-fleet run my-task --input data.csv --id-column id --text-column text --provider ollama
+harness-fleet run my-task --input data.csv --id-column id --text-column text --provider ollama
 ```
 
 Endpoints on `localhost` or `127.0.0.1` are automatically marked free (`cost = 0.0`). For third-party cloud OpenAI-compatible endpoints, specify costs explicitly (`--input-cost` / `--output-cost`) or leave them as unknown-cost to prevent accidental misclassification.
@@ -216,7 +289,7 @@ Endpoints on `localhost` or `127.0.0.1` are automatically marked free (`cost = 0
 Enforce zero data retention (ZDR), prohibit provider data collection, limit request spend, and control upstream routing on a per-run basis:
 
 ```bash
-free-fleet run my-task \
+harness-fleet run my-task \
   --input sensitive-data.jsonl \
   --zdr \
   --no-data-collection \
@@ -230,12 +303,19 @@ You can pass `--openrouter-providers` as a comma-separated list or as repeatable
 
 ---
 
+## Source Quality
+
+Mechanical `discover` and `fetch` runs enforce a default 70% source-capture
+floor and report backend/query provenance for fetched records. Use `--json`
+for the `source_quality` report; lower the floor with
+`--min-source-coverage 0` only for an intentional sparse-source audit.
+
 ## SQLite Control Plane
 
-`free-fleet` uses SQLite in WAL mode with `BEGIN IMMEDIATE` atomic leases. If a worker crashes or a laptop closes, the run can be resumed seamlessly:
+`harness-fleet` uses SQLite in WAL mode with `BEGIN IMMEDIATE` atomic leases. If a worker crashes or a laptop closes, the run can be resumed seamlessly:
 
 ```bash
-free-fleet resume <run_id>
+harness-fleet resume <run_id>
 ```
 
 Free routes are used by default. A paid route approved in an earlier session must be requested again with `--route <route-id>`.
@@ -258,7 +338,7 @@ Free routes are used by default. A paid route approved in an earlier session mus
 | `routes add` | Register an explicit custom or local model route (`--free`, `--input-cost`) |
 | `cooldowns` | Inspect active rate-limit route cooldowns or clear them (`--clear`, `--route`) |
 | `tasks` | List registered task definitions |
-| `init` | Create a typed task from a preset (`score`, `filter`, `triage`, `classify`, `extract`, `summarize`) |
+| `init` | Create a typed task from a preset (`score`, `filter`, `account-research`, `triage`, `classify`, `extract`, `summarize`) |
 | `init --from-example` | Infer a draft `claims_schema` from a labeled CSV (`--from-example labels.csv --label-column label`) |
 | `validate` | Check task schema and input formatting without inference (`--only-ids`) |
 | `test` | Run one real batch through candidate models |
@@ -272,8 +352,8 @@ Free routes are used by default. A paid route approved in an earlier session mus
 | `schema` | Print admitted JSON Schemas or database contracts |
 | `mcp install` | One-command Claude/Cursor setup (auto-wires `claude_desktop_config.json` / `mcp.json`) |
 | `serve` | Run the Model Context Protocol (MCP) server over stdio |
-| `discover` | Broad web search (`ddgs`, self-hosted SearXNG, HN Algolia, YC, Reddit, Stack Exchange, Discourse, Lobsters, Lemmy, Dev.to) to an items file |
-| `fetch` | Fetch URLs, sitemaps, site crawls, ATS boards (Greenhouse/Ashby/Lever), YC profiles, HN/Reddit threads, or Q&A forums to an items file |
+| `discover` | Broad web search (`ddgs`, self-hosted SearXNG, HN Algolia, YC, Reddit, Stack Exchange, Discourse, Lobsters, Lemmy, Dev.to) to an accounts file |
+| `fetch` | Fetch URLs, sitemaps, site crawls, ATS boards (Greenhouse/Ashby/Lever), YC profiles, HN/Reddit threads, or Q&A forums to an accounts file |
 
 Pass `--json` to any command for machine-readable JSON output. `--free-only` is the explicit zero-cost filter (replaces implicit `max-cost=0` sentinel). Long documents are warned when truncated (`partial` slices).
 
@@ -282,14 +362,14 @@ Pass `--json` to any command for machine-readable JSON output. `--free-only` is 
 
 ## MCP Server
 
-`free-fleet` includes a Model Context Protocol (MCP) server for integration into Cursor, Claude Desktop, Antigravity, and other agent environments:
+`harness-fleet` includes a Model Context Protocol (MCP) server for integration into Cursor, Claude Desktop, Antigravity, and other agent environments:
 
 **One-command install (recommended for GTM folks):**
 ```bash
-free-fleet mcp install --workspace-root "$PWD"  # auto-detects Claude/Cursor, writes mcpServers entry
+harness-fleet mcp install --workspace-root "$PWD"  # auto-detects Claude/Cursor, writes mcpServers entry
 # Preview first
-free-fleet mcp install --dry-run --json
-free-fleet doctor --workspace-root "$PWD" --json  # verify
+harness-fleet mcp install --dry-run --json
+harness-fleet doctor --workspace-root "$PWD" --json  # verify
 # Restart Claude/Cursor to load
 ```
 
@@ -297,8 +377,8 @@ Manual entry:
 ```json
 {
   "mcpServers": {
-    "free-fleet": {
-      "command": "free-fleet",
+    "harness-fleet": {
+      "command": "harness-fleet",
       "args": ["serve", "--workspace-root", "/absolute/path/to/workspace"]
     }
   }

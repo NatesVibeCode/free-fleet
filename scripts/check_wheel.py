@@ -3,16 +3,16 @@ import argparse
 import csv
 import json
 import os
-from pathlib import Path
 import subprocess
 import sys
 import tempfile
 import venv
+from pathlib import Path
 
 
 def main():
     parser = argparse.ArgumentParser()
-    parser.add_argument("--distribution", choices=("account-fleet", "free-fleet"), required=True)
+    parser.add_argument("--distribution", choices=("harness-fleet",), required=True)
     parser.add_argument("--offline-system-deps", action="store_true", help="Reuse installed dependencies when offline; does not verify dependency installation")
     args = parser.parse_args()
     repository = Path(__file__).resolve().parents[1]
@@ -31,10 +31,10 @@ def main():
         workspace = root / "sales workspace"
         workspace.mkdir()
         env = {key: value for key, value in os.environ.items() if not key.startswith((
-            "PYTHONPATH", "FREE_FLEET", "BULK_LANES", "OPENROUTER", "OPENAI", "OLLAMA", "LMSTUDIO", "VLLM", "GROQ", "CEREBRAS", "OPENCODE",
+            "PYTHONPATH", "HARNESS_FLEET", "OPENROUTER", "OPENAI", "OLLAMA", "LMSTUDIO", "VLLM", "GROQ", "CEREBRAS", "OPENCODE",
         ))}
         cli = bindir / (args.distribution + (".exe" if os.name == "nt" else ""))
-        subprocess.run([str(python), "-c", "import free_fleet, sys; from pathlib import Path; assert Path(free_fleet.__file__).is_relative_to(Path(sys.prefix)), free_fleet.__file__"], cwd=workspace, env=env, check=True)
+        subprocess.run([str(python), "-c", "import harness_fleet, sys; from pathlib import Path; assert Path(harness_fleet.__file__).is_relative_to(Path(sys.prefix)), harness_fleet.__file__; assert (Path(harness_fleet.__file__).parent / 'resources' / 'studio' / 'index.html').is_file(), 'studio page missing from wheel'"], cwd=workspace, env=env, check=True)
 
         def run(*command):
             completed = subprocess.run([str(cli), *command, "--json"], cwd=workspace, env=env, capture_output=True, text=True, encoding="utf-8")
@@ -44,20 +44,18 @@ def main():
 
         setup = run("setup", "--workspace-root", str(workspace))
         assert Path(setup["stdio_server"]["command"]).parent.resolve() == bindir.resolve(), setup["stdio_server"]
-        assert (workspace / ".agents/skills/free-fleet/SKILL.md").is_file()
-        if args.distribution == "account-fleet":
-            assert (workspace / ".agents/skills/account-fleet/references/mcp-recipes.md").is_file()
-            run("init", "research", "--preset", "account-research")
+        assert (workspace / ".agents/skills/harness-fleet/SKILL.md").is_file()
+        preset = run("init", "score-smoke", "--preset", "score")
+        assert preset["revision"]
+        assert any(task["task_name"] == "score-smoke" for task in run("tasks")["tasks"])
         demo = run("quickstart", "--demo", "--run-id", "portable-demo")
-        assert demo["verified"] == (10 if args.distribution == "account-fleet" else 2)
+        assert demo["verified"] == 10
         run("export", "portable-demo", "--format", "csv", "--sort-by", "score", "--desc", "--top", "2", "--rank", "--output", "ranked.csv")
         with (workspace / "ranked.csv").open(encoding="utf-8", newline="") as handle:
             rows = list(csv.DictReader(handle))
         assert len(rows) == 2
         assert [row["rank"] for row in rows] == ["1", "2"]
         assert all(row["primary_quote_text"] for row in rows)
-        if args.distribution == "account-fleet":
-            assert all(row["fit_tier"] and row["identified_gap"] for row in rows)
         assert run("status", "portable-demo")["status"] == "completed"
         mode = "reused system dependencies" if args.offline_system_deps else "fresh dependencies"
         print(f"{args.distribution}: installed wheel setup, offline demo, ranked CSV, and status passed ({mode})")

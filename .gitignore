@@ -15,6 +15,10 @@ venv/
 *.lock
 runs/
 evidence/
+ideal_company_profile.json
+accounts.csv
+ranked_accounts*.csv
+top_25_ranked_accounts.csv
 *.db
 *.db-shm
 *.db-wal

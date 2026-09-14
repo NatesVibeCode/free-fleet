@@ -1,7 +1,10 @@
 import csv
-from free_fleet.export import export_clean_csv, export_clean_packet
-from free_fleet.input_data import load_input_items
-from free_fleet.models import TaskSpec
+
+import pytest
+
+from harness_fleet.export import export_clean_packet
+from harness_fleet.input_data import load_input_items
+from harness_fleet.models import ClaimFilter, FilterClause, FilterOp, SortSpec, TaskSpec
 
 
 def test_csv_import_with_custom_columns(tmp_path):
@@ -47,7 +50,7 @@ def test_csv_export_projection(tmp_path):
 
     task_payload = task.model_dump(mode="json", by_alias=True)
     task_revision = hashlib.sha256(
-        json.dumps(task_payload, sort_keys=True, separators=(",", ":"), ensure_ascii=False).encode()
+        json.dumps(task.revision_payload(), sort_keys=True, separators=(",", ":"), ensure_ascii=False).encode()
     ).hexdigest()
 
     run_data = {
@@ -89,7 +92,7 @@ def test_csv_export_projection(tmp_path):
     export_clean_packet(run_data, csv_output, export_format="csv")
 
     assert csv_output.is_file()
-    with open(csv_output, mode="r", encoding="utf-8") as f:
+    with open(csv_output, encoding="utf-8") as f:
         reader = list(csv.DictReader(f))
         assert len(reader) == 1
         row = reader[0]
@@ -120,7 +123,7 @@ def test_csv_export_sorting_ranking_and_filtering(tmp_path):
     )
     task_payload = task.model_dump(mode="json", by_alias=True)
     task_revision = hashlib.sha256(
-        json.dumps(task_payload, sort_keys=True, separators=(",", ":"), ensure_ascii=False).encode()
+        json.dumps(task.revision_payload(), sort_keys=True, separators=(",", ":"), ensure_ascii=False).encode()
     ).hexdigest()
 
     def make_item(item_id, score, passed, tier, quote):
@@ -164,13 +167,12 @@ def test_csv_export_sorting_ranking_and_filtering(tmp_path):
         run_data,
         ranked_csv,
         export_format="csv",
-        sort_by="score",
-        descending=True,
+        sort=SortSpec(field="score"),
         top=3,
         rank=True,
     )
     assert ranked_csv.is_file()
-    with open(ranked_csv, mode="r", encoding="utf-8") as f:
+    with open(ranked_csv, encoding="utf-8") as f:
         rows = list(csv.DictReader(f))
     assert len(rows) == 3
     assert [r["rank"] for r in rows] == ["1", "2", "3"]
@@ -183,9 +185,9 @@ def test_csv_export_sorting_ranking_and_filtering(tmp_path):
         run_data,
         survivors_csv,
         export_format="csv",
-        filter_expr="passed=true",
+        claim_filter=ClaimFilter(all=[FilterClause(field="passed", value=True)]),
     )
-    with open(survivors_csv, mode="r", encoding="utf-8") as f:
+    with open(survivors_csv, encoding="utf-8") as f:
         rows = list(csv.DictReader(f))
     assert len(rows) == 4
     assert "unfit.co" not in [r["item_id"] for r in rows]
@@ -196,15 +198,34 @@ def test_csv_export_sorting_ranking_and_filtering(tmp_path):
         run_data,
         high_score_csv,
         export_format="csv",
-        filter_expr="score>=90",
-        sort_by="score",
-        descending=True,
+        claim_filter=ClaimFilter(all=[FilterClause(field="score", op=FilterOp.GTE, value=90)]),
+        sort=SortSpec(field="score"),
         rank=True,
     )
-    with open(high_score_csv, mode="r", encoding="utf-8") as f:
+    with open(high_score_csv, encoding="utf-8") as f:
         rows = list(csv.DictReader(f))
     assert len(rows) == 3
     assert [r["item_id"] for r in rows] == ["stripe.com", "hyper_ai", "pinecone.io"]
+
+
+def test_blank_text_row_fails_closed(tmp_path):
+    from harness_fleet.input_data import InputDataError, load_input_items
+
+    bad = tmp_path / "bad.csv"
+    bad.write_text("item_id,text\ngood,real evidence here\nempty,\n")
+    with pytest.raises(InputDataError, match="empty text column"):
+        load_input_items(bad)
+
+
+def test_only_ids_are_exact_by_default_with_fuzzy_opt_out(tmp_path):
+    from harness_fleet.input_data import load_input_items
+
+    # JSONL has no ID cleaning, so near-misses exercise matching directly.
+    data = tmp_path / "data.jsonl"
+    data.write_text('{"item_id": "hyper_ai", "text": "fast GPU infrastructure"}\n')
+    assert load_input_items(data, only_ids={"hyper ai"}) == []
+    assert len(load_input_items(data, only_ids={"hyper ai"}, fuzzy_ids=True)) == 1
+    assert len(load_input_items(data, only_ids={"hyper_ai"})) == 1
 
 
 def test_load_input_items_with_only_ids(tmp_path):

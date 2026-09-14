@@ -27,6 +27,7 @@ top_25_ranked_accounts.csv
 *.sqlite3-wal
 *.tmp
 .DS_Store
+.studio-preview/
 
 # Carousel and promotional assets
 carousel/

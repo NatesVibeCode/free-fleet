@@ -352,6 +352,7 @@ Free routes are used by default. A paid route approved in an earlier session mus
 | `schema` | Print admitted JSON Schemas or database contracts |
 | `mcp install` | One-command Claude/Cursor setup (auto-wires `claude_desktop_config.json` / `mcp.json`) |
 | `serve` | Run the Model Context Protocol (MCP) server over stdio |
+| `studio` | Serve the localhost studio UI (scoring contract, harnesses, models, sequenced runs) |
 | `discover` | Broad web search (`ddgs`, self-hosted SearXNG, HN Algolia, YC, Reddit, Stack Exchange, Discourse, Lobsters, Lemmy, Dev.to) to an accounts file |
 | `fetch` | Fetch URLs, sitemaps, site crawls, ATS boards (Greenhouse/Ashby/Lever), YC profiles, HN/Reddit threads, or Q&A forums to an accounts file |
 
@@ -383,6 +384,28 @@ Manual entry:
     }
   }
 }
+```
+
+---
+
+## Harness Studio (Local UI)
+
+`harness-fleet studio` serves a localhost-only UI over the same SQLite control plane
+(default `http://127.0.0.1:8080`; honor `--workspace-root`, `--port`, and `--db`).
+
+Pick harnesses and their models, then build sequenced steps with per-step routes,
+budgets, and an explicit paid opt-in that records a trust note. Paid routes never run
+implicitly.
+
+The **Scoring contract** panel is a view over the task's typed `TaskSpec`. It lists the
+evidence checklist items, their points, source weights, recency half-lives, and the
+fixed 0–100 tier bands. Saving writes a **new immutable task revision** and advances the
+active pointer; the previous revision stays readable as lineage. Score, fit tier, and
+pass/fail are computed by the pipeline from checklist answers and cannot be set in the
+UI — the panel rejects any attempt to edit them.
+
+```bash
+harness-fleet studio --workspace-root "$PWD" --port 8080
 ```
 
 ---

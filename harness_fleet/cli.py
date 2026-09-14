@@ -252,8 +252,9 @@ def cmd_profile(args: argparse.Namespace) -> None:
         profile_path = workspace / profile_path
     profile_exists = profile_path.is_file()
     if getattr(args, "init", False) and profile_exists and not getattr(args, "force", False):
-        print(f"Error: Profile already exists at {profile_path}; use --force to replace it.", file=sys.stderr)
-        raise SystemExit(1)
+        # Raise so main() renders this in whichever mode was requested
+        # (--json included) instead of writing human text to stdout.
+        raise ValueError(f"profile already exists at {profile_path}; use --force to replace it")
 
     if getattr(args, "init", False) or (not profile_exists and store.load_profile() is None):
         profile = IdealCompanyProfile()
@@ -287,12 +288,14 @@ def cmd_profile(args: argparse.Namespace) -> None:
 def cmd_routes(args: argparse.Namespace) -> None:
     catalog = RouteCatalog(db_path=_store(args).path)
     action = getattr(args, "action", "list")
-    route_id = getattr(args, "route_id", None) or getattr(args, "add", None)
+    add_alias = getattr(args, "add", None)
+    route_id = getattr(args, "route_id", None) or add_alias
 
-    if action == "add" or route_id:
+    # Only `add` (or the legacy --add alias) registers a route; a bare route_id
+    # with `list`/`refresh` is a filter/target, never an implicit write.
+    if action == "add" or add_alias:
         if not route_id:
-            print("Error: route_id required to add a route")
-            raise SystemExit(1)
+            raise ValueError("route_id required to add a route")
         provider = getattr(args, "provider", None) or (route_id.split("/", 1)[0] if "/" in route_id else "openai_compatible")
         is_free = bool(getattr(args, "free", False))
         in_cost = getattr(args, "input_cost", None)
@@ -751,9 +754,7 @@ def cmd_status(args: argparse.Namespace) -> None:
     try:
         while True:
             report = store.get_run_status(args.run_id)
-            if args.json:
-                _emit(report, True)
-            else:
+            if not args.json:
                 print("\033[H\033[J", end="")
                 ui.print_status_dashboard(report)
             if report.status in ("completed", "completed_with_failures", "budget_exhausted"):
@@ -761,6 +762,9 @@ def cmd_status(args: argparse.Namespace) -> None:
             time.sleep(getattr(args, "interval", 2.0))
     except KeyboardInterrupt:
         pass
+    if args.json:
+        # --json promises exactly one document, even under --watch.
+        _emit(store.get_run_status(args.run_id), True)
 
 
 def cmd_eval(args: argparse.Namespace) -> None:
@@ -1615,8 +1619,9 @@ def build_parser() -> argparse.ArgumentParser:
     db_sub = db_parser.add_subparsers(dest="db_command", required=True)
     backup = db_sub.add_parser("backup", help="Create a SQLite backup file (safe while running)")
     backup.add_argument("destination", help="Destination file path for the backup (e.g. ./backup.db)")
+    # Flags live on the subparser only: parent-parser defaults would overwrite
+    # them and silently back up the wrong database.
     _common(backup, database=True)
-    _common(db_parser, database=True)
 
     test = commands.add_parser("test", help="Run one real inference batch")
     test.add_argument("task", help="Registered task name or TaskSpec JSON path")

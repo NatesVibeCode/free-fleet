@@ -41,22 +41,22 @@ def test_missing_cost_is_unknown_not_zero():
     runner = RunnerStub(stdout=json.dumps({"result": "text"}))
     ok, _, receipt = _provider(runner).run_prompt("cursor/some-model", "prompt")
     assert ok is True
-    assert receipt["cost"] is None
-    assert receipt["cost_status"] == "unknown"
+    assert receipt.cost is None
+    assert receipt.cost_status == "unknown"
 
 
 def test_error_object_fails_closed():
     runner = RunnerStub(stdout=json.dumps({"error": "boom"}))
     ok, text, receipt = _provider(runner).run_prompt("cursor/some-model", "prompt")
     assert ok is False and text is None
-    assert receipt["error_type"] == "inference_error"
+    assert receipt.error_type == "inference_error"
 
 
 def test_nonzero_exit_is_error_receipt():
     runner = RunnerStub(stdout="", code=1, stderr="nope")
     ok, _, receipt = _provider(runner).run_prompt("cursor/some-model", "prompt")
     assert ok is False
-    assert receipt["error_type"] == "inference_error"
+    assert receipt.error_type == "inference_error"
 
 
 def test_timeout_receipt():
@@ -68,4 +68,4 @@ def test_timeout_receipt():
 
     ok, text, receipt = _provider(TimeoutRunner()).run_prompt("cursor/some-model", "prompt")  # type: ignore[arg-type]
     assert ok is False and text is None
-    assert receipt["error_type"] == "timeout"
+    assert receipt.error_type == "timeout"

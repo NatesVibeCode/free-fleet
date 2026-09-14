@@ -5,6 +5,7 @@ import json
 import uuid
 from typing import Any
 
+from ..models import ProviderReceipt
 from .base import BaseProvider
 
 
@@ -70,7 +71,7 @@ class DemoProvider(BaseProvider):
         timeout_sec: int = 120,
         session_id: str | None = None,
         policy: Any | None = None,
-    ) -> tuple[bool, str | None, dict]:
+    ) -> tuple[bool, str | None, ProviderReceipt]:
         # Extract the task payload from the rendered prompt. Profile context
         # and other instructions may contain valid JSON objects before the
         # final task payload, so looking only at the first brace is ambiguous.
@@ -78,18 +79,18 @@ class DemoProvider(BaseProvider):
 
         payload = extract_task_payload(prompt)
         if not payload or "input_items" not in payload or "output_schema" not in payload:
-            receipt = {
-                "id": f"demo-{uuid.uuid4().hex[:8]}",
-                "session_id": session_id,
-                "provider": "demo",
-                "requested_route": route_id,
-                "status": "failed",
-                "cost": 0.0,
-                "cost_status": "reported_zero",
-                "usage": {"total_tokens": 0},
-                "error": "demo provider could not parse prompt payload",
-                "duration_seconds": 0.01,
-            }
+            receipt: ProviderReceipt = ProviderReceipt(
+                id=f"demo-{uuid.uuid4().hex[:8]}",
+                session_id=session_id,
+                provider="demo",
+                requested_route=route_id,
+                status="failed",
+                cost=0.0,
+                cost_status="reported_zero",
+                usage={"total_tokens": 0},
+                error="demo provider could not parse prompt payload",
+                duration_seconds=0.01,
+            )
             return False, None, receipt
 
         output_schema = payload.get("output_schema", {})
@@ -152,16 +153,16 @@ class DemoProvider(BaseProvider):
             })
 
         response = json.dumps({"items": items_out}, ensure_ascii=False)
-        receipt = {
-            "id": f"demo-{uuid.uuid4().hex[:8]}",
-            "session_id": session_id,
-            "provider": "demo",
-            "requested_route": route_id,
-            "status": "complete",
-            "cost": 0.0,
-            "cost_status": "reported_zero",
-            "usage": {"total_tokens": 10},
-            "error": None,
-            "duration_seconds": 0.005,
-        }
+        receipt = ProviderReceipt(
+            id=f"demo-{uuid.uuid4().hex[:8]}",
+            session_id=session_id,
+            provider="demo",
+            requested_route=route_id,
+            status="complete",
+            cost=0.0,
+            cost_status="reported_zero",
+            usage={"total_tokens": 10},
+            error=None,
+            duration_seconds=0.005,
+        )
         return True, response, receipt

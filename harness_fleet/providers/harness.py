@@ -26,7 +26,7 @@ from typing import Any, Literal, Protocol
 
 from pydantic import model_validator
 
-from ..models import ClosedModel
+from ..models import ClosedModel, ProviderReceipt
 from .base import BaseProvider
 
 PromptDelivery = Literal["argv_last", "stdin", "file_flag"]
@@ -128,8 +128,8 @@ def extract_conservative_text(payload: Any) -> str | None:
 
 
 def parse_json_object_stdout(
-    stdout: str, *, receipt: dict[str, Any]
-) -> tuple[bool, str | None, dict[str, Any]]:
+    stdout: str, *, receipt: ProviderReceipt
+) -> tuple[bool, str | None, ProviderReceipt]:
     """Parse a single-JSON-object harness transcript (conservative).
 
     Returns ``(ok, text, receipt)``; missing text fails closed with an
@@ -139,44 +139,44 @@ def parse_json_object_stdout(
     try:
         payload = json.loads(stdout.strip())
     except (json.JSONDecodeError, AttributeError):
-        receipt["error"] = (stdout or "")[-500:] or "empty harness output"
-        receipt["error_type"] = "inference_error"
+        receipt.error = (stdout or "")[-500:] or "empty harness output"
+        receipt.error_type = "inference_error"
         return False, None, receipt
     text = extract_conservative_text(payload)
     if isinstance(payload, dict) and (
         payload.get("error") or payload.get("type") == "error" or payload.get("is_error") is True
     ):
         detail = payload.get("error", payload.get("message", "harness reported an error"))
-        receipt["error"] = str(detail)[:500]
-        receipt["error_type"] = "inference_error"
+        receipt.error = str(detail)[:500]
+        receipt.error_type = "inference_error"
         return False, None, receipt
     if not text:
-        receipt["error"] = "harness returned no readable text"
-        receipt["error_type"] = "inference_error"
+        receipt.error = "harness returned no readable text"
+        receipt.error_type = "inference_error"
         return False, None, receipt
     if isinstance(payload, dict):
         usage = payload.get("usage", payload.get("tokens"))
         if isinstance(usage, dict):
-            receipt["usage"] = usage
+            receipt.usage = usage
         cost = payload.get("cost")
         if isinstance(cost, (int, float)) and not isinstance(cost, bool):
-            receipt["cost"] = float(cost)
-            receipt["cost_status"] = "reported_zero" if float(cost) == 0 else "billed"
-    receipt["status"] = "complete"
+            receipt.cost = float(cost)
+            receipt.cost_status = "reported_zero" if float(cost) == 0 else "billed"
+    receipt.status = "complete"
     return True, text, receipt
 
 
 def run_error_receipt(
-    code: int, stdout: str, stderr: str, *, receipt: dict[str, Any]
-) -> tuple[bool, None, dict[str, Any]]:
+    code: int, stdout: str, stderr: str, *, receipt: ProviderReceipt
+) -> tuple[bool, None, ProviderReceipt]:
     """Shared non-zero-exit / no-output failure receipt (rate-limit aware)."""
     err_msg = (stderr or stdout)[-500:] or f"Exit code {code}"
-    receipt["error"] = err_msg
+    receipt.error = err_msg
     if "429" in err_msg.lower() or "rate limit" in err_msg.lower():
-        receipt["error_type"] = "rate_limit"
-        receipt["retry_after"] = 10.0
+        receipt.error_type = "rate_limit"
+        receipt.retry_after = 10.0
     else:
-        receipt["error_type"] = "inference_error"
+        receipt.error_type = "inference_error"
     return False, None, receipt
 
 
@@ -187,21 +187,14 @@ class CLIHarnessProvider(BaseProvider):
         self.spec = spec
         self.runner = runner or LocalHarnessCLI()
 
-    def _new_receipt(self, route_id: str, session_id: str | None) -> dict[str, Any]:
-        return {
-            "id": uuid.uuid4().hex,
-            "session_id": session_id,
-            "provider": self.spec.name,
-            "requested_route": route_id,
-            "status": "failed",
-            "cost": None,
-            "cost_status": "unknown",
-            "usage": None,
-            "error": None,
-            "error_type": None,
-            "retry_after": None,
-            "duration_seconds": None,
-        }
+    def _new_receipt(self, route_id: str, session_id: str | None) -> ProviderReceipt:
+        return ProviderReceipt(
+            id=uuid.uuid4().hex,
+            session_id=session_id,
+            provider=self.spec.name,
+            requested_route=route_id,
+            status="failed",
+        )
 
     def _preflight(self) -> str | None:
         """Return an error string when the harness binary is unavailable."""
@@ -255,10 +248,10 @@ class CLIHarnessProvider(BaseProvider):
         code: int,
         stdout: str,
         stderr: str,
-        receipt: dict[str, Any],
+        receipt: ProviderReceipt,
         started: float,
         workdir: Path | None = None,
-    ) -> tuple[bool, str | None, dict[str, Any]]:
+    ) -> tuple[bool, str | None, ProviderReceipt]:
         """Adapter-owned parser. Must never return garbage text."""
         raise NotImplementedError
 
@@ -274,7 +267,7 @@ class CLIHarnessProvider(BaseProvider):
         timeout_sec: int = 120,
         session_id: str | None = None,
         policy: Any | None = None,
-    ) -> tuple[bool, str | None, dict]:
+    ) -> tuple[bool, str | None, ProviderReceipt]:
         started = time.time()
         receipt = self._new_receipt(route_id, session_id)
         full_prompt = (system_prompt + "\n\n" if system_prompt else "") + prompt
@@ -283,9 +276,9 @@ class CLIHarnessProvider(BaseProvider):
         try:
             problem = self._preflight()
             if problem is not None:
-                receipt["error"] = problem
-                receipt["error_type"] = "inference_error"
-                receipt["duration_seconds"] = time.time() - started
+                receipt.error = problem
+                receipt.error_type = "inference_error"
+                receipt.duration_seconds = time.time() - started
                 return False, None, receipt
             model = self.derive_model(route_id)
             stdin_text: str | None = None
@@ -297,7 +290,8 @@ class CLIHarnessProvider(BaseProvider):
                 workdir = Path(tempfile.mkdtemp(prefix=f"harness-fleet-{self.spec.name}-"))
             if self.spec.prompt_delivery == "file_flag":
                 prompt_path = workdir / "prompt.txt" if workdir is not None else None
-                assert prompt_path is not None
+                if prompt_path is None:
+                    raise RuntimeError(f"{self.spec.name} prompt file staging failed")
                 prompt_path.write_text(full_prompt, encoding="utf-8")
                 prompt_file = str(prompt_path)
             argv = [self.spec.binary, *self.build_argv(
@@ -329,22 +323,22 @@ class CLIHarnessProvider(BaseProvider):
                 code=code, stdout=stdout, stderr=stderr, receipt=receipt, started=started,
                 workdir=workdir,
             )
-            receipt["duration_seconds"] = time.time() - started
+            receipt.duration_seconds = time.time() - started
             return ok, text, receipt
         except MalformedRouteError as exc:
-            receipt["error"] = str(exc)
-            receipt["error_type"] = "inference_error"
-            receipt["duration_seconds"] = time.time() - started
+            receipt.error = str(exc)
+            receipt.error_type = "inference_error"
+            receipt.duration_seconds = time.time() - started
             return False, None, receipt
         except subprocess.TimeoutExpired as exc:
-            receipt["error"] = str(exc)
-            receipt["error_type"] = "timeout"
-            receipt["duration_seconds"] = time.time() - started
+            receipt.error = str(exc)
+            receipt.error_type = "timeout"
+            receipt.duration_seconds = time.time() - started
             return False, None, receipt
         except Exception as exc:
-            receipt["error"] = str(exc)
-            receipt["error_type"] = "inference_error"
-            receipt["duration_seconds"] = time.time() - started
+            receipt.error = str(exc)
+            receipt.error_type = "inference_error"
+            receipt.duration_seconds = time.time() - started
             return False, None, receipt
         finally:
             if workdir is not None:

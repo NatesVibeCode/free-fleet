@@ -111,7 +111,7 @@ def test_lockdown_strategy_fails_closed():
     provider._preflight = lambda: None  # type: ignore[method-assign]
     ok, _, receipt = provider.run_prompt("fake/model", "prompt")
     assert ok is False
-    assert "lockdown" in (receipt["error"] or "")
+    assert "lockdown" in (receipt.error or "")
 
 
 def test_malformed_route_fails_closed():
@@ -120,7 +120,7 @@ def test_malformed_route_fails_closed():
     provider._preflight = lambda: None  # type: ignore[method-assign]
     ok, text, receipt = provider.run_prompt("noseparator", "prompt")
     assert ok is False and text is None
-    assert receipt["status"] == "failed" and receipt["error"]
+    assert receipt.status == "failed" and receipt.error
 
 
 def test_timeout_receipt():
@@ -132,7 +132,7 @@ def test_timeout_receipt():
     provider._preflight = lambda: None  # type: ignore[method-assign]
     ok, text, receipt = provider.run_prompt("fake/model", "prompt")
     assert ok is False and text is None
-    assert receipt["error_type"] == "timeout"
+    assert receipt.error_type == "timeout"
 
 
 def test_missing_binary_fails_closed_without_running():
@@ -142,7 +142,7 @@ def test_missing_binary_fails_closed_without_running():
     provider = FakeProvider(_spec(binary="definitely-not-installed-xyz"), runner=_boom)  # type: ignore[arg-type]
     ok, text, receipt = provider.run_prompt("fake/model", "prompt")
     assert ok is False and text is None
-    assert "not found in PATH" in (receipt["error"] or "")
+    assert "not found in PATH" in (receipt.error or "")
 
 
 def test_local_runner_uses_shell_false(monkeypatch):
@@ -162,8 +162,12 @@ def test_local_runner_uses_shell_false(monkeypatch):
 
 
 def test_conservative_parser_rejects_garbage():
-    receipt: dict[str, Any] = {"status": "failed", "cost": None, "cost_status": "unknown",
-                               "usage": None, "error": None, "error_type": None}
+    from harness_fleet.providers.harness import ProviderReceipt
+
+    receipt = ProviderReceipt(
+        id="recept-test", provider="fake", requested_route="fake/model",
+        status="failed", error_type="inference_error",
+    )
     ok, text, receipt = parse_json_object_stdout('{"unrelated": 1}', receipt=receipt)
     assert ok is False and text is None
-    assert receipt["error_type"] == "inference_error"
+    assert receipt.error_type == "inference_error"

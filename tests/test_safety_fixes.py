@@ -75,5 +75,5 @@ def test_demo_provider_ignores_profile_json_before_task_payload():
     prompt = f"{profile.to_prompt_context()}\n\n{task.render_prompt([{'item_id': 'one', 'sections': [{'slice_id': 'full', 'text': 'A sufficiently long source quote.'}]}])}"
     ok, response, receipt = DemoProvider().run_prompt("demo/fake", prompt)
     assert ok is True
-    assert receipt["status"] == "complete"
+    assert receipt.status == "complete"
     assert response is not None and '"items"' in response

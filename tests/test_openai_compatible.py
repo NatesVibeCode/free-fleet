@@ -27,8 +27,8 @@ def test_remote_explicit_zero_cost_is_preserved(monkeypatch):
     }))
     ok, _, receipt = OpenAICompatibleProvider(base_url="https://remote.example/v1").run_prompt("model", "test")
     assert ok
-    assert receipt["cost"] == 0.0
-    assert receipt["cost_status"] == "reported_zero"
+    assert receipt.cost == 0.0
+    assert receipt.cost_status == "reported_zero"
 
 
 def test_unrelated_400_does_not_drop_constraints(monkeypatch):
@@ -48,7 +48,7 @@ def test_unrelated_400_does_not_drop_constraints(monkeypatch):
     monkeypatch.setattr(httpx.Client, "post", _post)
     ok, _, receipt = OpenAICompatibleProvider(base_url="https://remote.example/v1").run_prompt("m", prompt)
     assert ok is False
-    assert receipt["error_type"] == "inference_error"
+    assert receipt.error_type == "inference_error"
     assert len(calls) == 1
     assert "response_format" in calls[0]
 
@@ -86,9 +86,9 @@ def test_openai_compatible_successful_completion(monkeypatch):
     ok, text, receipt = prov.run_prompt("ollama/qwen", "hello")
     assert ok is True
     assert text == '{"items": []}'
-    assert receipt["status"] == "complete"
-    assert receipt["cost_status"] == "reported_zero"
-    assert receipt["usage"]["total_tokens"] == 42
+    assert receipt.status == "complete"
+    assert receipt.cost_status == "reported_zero"
+    assert receipt.usage["total_tokens"] == 42
 
 
 def test_openai_compatible_rate_limit_429(monkeypatch):
@@ -101,9 +101,9 @@ def test_openai_compatible_rate_limit_429(monkeypatch):
     prov = OpenAICompatibleProvider(base_url="http://localhost:11434/v1")
     ok, text, receipt = prov.run_prompt("ollama/qwen", "hello")
     assert ok is False
-    assert receipt["status"] == "failed"
-    assert receipt["error_type"] == "rate_limit"
-    assert receipt["retry_after"] == 15.0
+    assert receipt.status == "failed"
+    assert receipt.error_type == "rate_limit"
+    assert receipt.retry_after == 15.0
 
 
 def test_openai_compatible_transient_503(monkeypatch):
@@ -115,8 +115,8 @@ def test_openai_compatible_transient_503(monkeypatch):
     prov = OpenAICompatibleProvider(base_url="http://localhost:11434/v1")
     ok, text, receipt = prov.run_prompt("ollama/qwen", "hello")
     assert ok is False
-    assert receipt["error_type"] == "transient_http"
-    assert receipt["retry_after"] == 5.0
+    assert receipt.error_type == "transient_http"
+    assert receipt.retry_after == 5.0
 
 
 def test_openai_compatible_prefix_stripping(monkeypatch):

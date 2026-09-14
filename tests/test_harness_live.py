@@ -34,7 +34,7 @@ def test_live_ping(name, binary, provider_cls, route_id):
     ok, text, receipt = provider_cls().run_prompt(
         route_id, "Reply with exactly: PING", timeout_sec=120
     )
-    assert receipt["provider"] == name
+    assert receipt.provider == name
     if not ok:
-        pytest.skip(f"{name} not operational here: {(receipt.get('error') or '')[:200]}")
+        pytest.skip(f"{name} not operational here: {(receipt.error or '')[:200]}")
     assert text is not None and "PING" in text

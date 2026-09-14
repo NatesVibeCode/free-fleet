@@ -17,6 +17,7 @@ from .models import (
     RouteEvalReport,
     RouteEvalResult,
     TaskSpec,
+    coerce_receipt,
 )
 from .providers.base import clean_llm_json
 from .providers.registry import ProviderRegistry, ProviderResolutionError
@@ -112,9 +113,37 @@ class RouteEvaluator:
             item = res["item"]
             ok = res["ok"]
             response_text = res["response_text"]
-            receipt = res["receipt"]
+            try:
+                receipt = coerce_receipt(res["receipt"])
+            except ValidationError as exc:
+                errors += 1
+                self.store.record_inference_attempt({
+                    "attempt_id": f"eval:{route_id}:{item.item_id}:{uuid.uuid4().hex[:8]}",
+                    "run_id": f"eval:{self.task.name}",
+                    "batch_id": item.item_id,
+                    "lease_attempt_number": 1,
+                    "route_id": route_id,
+                    "provider": provider_hint or "unknown",
+                    "task_name": self.task.name,
+                    "started_at": datetime.now(timezone.utc).isoformat(),
+                    "duration_seconds": None,
+                    "cost": None,
+                    "cost_status": "unknown",
+                    "usage": None,
+                    "retry_after": None,
+                    "error_type": "invalid_receipt",
+                    "error_message": f"Invalid provider receipt from '{route_id}': {exc}",
+                    "transport_status": "failed",
+                    "parse_status": "skipped",
+                    "schema_status": "skipped",
+                    "grounding_status": "skipped",
+                    "outcome": "transport_failed",
+                    "verified": False,
+                    "counts_against_budget": 1,
+                })
+                continue
 
-            dur = receipt.get("duration_seconds")
+            dur = receipt.duration_seconds
             if dur is not None and dur > 0:
                 duration_sum += float(dur)
                 duration_count += 1
@@ -125,16 +154,16 @@ class RouteEvaluator:
                 "batch_id": item.item_id,
                 "lease_attempt_number": 1,
                 "route_id": route_id,
-                "provider": receipt.get("provider") or provider_hint or "unknown",
+                "provider": receipt.provider or provider_hint or "unknown",
                 "task_name": self.task.name,
                 "started_at": datetime.now(timezone.utc).isoformat(),
-                "duration_seconds": receipt.get("duration_seconds"),
-                "cost": receipt.get("cost"),
-                "cost_status": receipt.get("cost_status"),
-                "usage": receipt.get("usage"),
-                "retry_after": receipt.get("retry_after"),
-                "error_type": receipt.get("error_type"),
-                "error_message": receipt.get("error"),
+                "duration_seconds": receipt.duration_seconds,
+                "cost": receipt.cost,
+                "cost_status": receipt.cost_status,
+                "usage": receipt.usage,
+                "retry_after": receipt.retry_after,
+                "error_type": receipt.error_type,
+                "error_message": receipt.error,
                 "transport_status": "success",
                 "parse_status": "skipped",
                 "schema_status": "skipped",
@@ -146,7 +175,7 @@ class RouteEvaluator:
 
             if not ok:
                 errors += 1
-                is_rl = receipt.get("error_type") == "rate_limit" or "429" in str(receipt.get("error", ""))
+                is_rl = receipt.error_type == "rate_limit" or "429" in str(receipt.error or "")
                 if is_rl:
                     rate_limits += 1
                 attempt_rec.update({

@@ -8,6 +8,7 @@ from typing import Any
 
 import httpx
 
+from ..models import ProviderReceipt
 from .base import BaseProvider
 
 _shared_client: httpx.Client | None = None
@@ -69,32 +70,34 @@ class OpenRouterProvider(BaseProvider):
         timeout_sec: int = 120,
         session_id: str | None = None,
         policy: Any | None = None,
-    ) -> tuple[bool, str | None, dict]:
+    ) -> tuple[bool, str | None, ProviderReceipt]:
         started = time.time()
         rid = uuid.uuid4().hex
-        
+
         # Route id can be "openrouter/foo/bar:free" or "foo/bar:free"
         model_name = route_id.removeprefix("openrouter/").removeprefix("openrouter:")
-        
-        receipt: dict[str, Any] = {
-            "id": rid,
-            "session_id": session_id,
-            "provider": "openrouter",
-            "requested_route": route_id,
-            "status": "failed",
-            "cost": None,
-            "cost_status": "unknown",
-            "usage": None,
-            "error": None,
-            "error_type": None,
-            "retry_after": None,
-            "duration_seconds": None,
-        }
+
+        receipt: ProviderReceipt = ProviderReceipt(
+            # openrouter constructs with string price_state; runtime verifies
+
+            id=rid,
+            session_id=session_id,
+            provider="openrouter",
+            requested_route=route_id,
+            status="failed",
+            cost=None,
+            cost_status="unknown",
+            usage=None,
+            error=None,
+            error_type=None,
+            retry_after=None,
+            duration_seconds=None,
+        )
 
         if not self.api_key:
-            receipt["error"] = "OPENROUTER_API_KEY is not set"
-            receipt["error_type"] = "auth_error"
-            receipt["duration_seconds"] = time.time() - started
+            receipt.error = "OPENROUTER_API_KEY is not set"
+            receipt.error_type = "auth_error"
+            receipt.duration_seconds = time.time() - started
             return False, None, receipt
 
         headers = {
@@ -115,6 +118,8 @@ class OpenRouterProvider(BaseProvider):
         }
 
         provider_cfg: dict[str, Any] = {}
+        # Policy attributes (zdr / allowed_providers / openrouter_*) are loosely
+        # typed in the model; assignments here are runtime-guarded by getattr.
         if policy:
             if getattr(policy, "zdr", False) or not getattr(policy, "allow_data_collection", True):
                 provider_cfg["data_collection"] = "deny"
@@ -167,55 +172,55 @@ class OpenRouterProvider(BaseProvider):
                     retry_sec = max(1.0, float(retry_hdr)) if retry_hdr else 10.0
                 except (ValueError, TypeError):
                     retry_sec = 10.0
-                receipt["error"] = f"Rate limited (429): {resp.text[:300]}"
-                receipt["error_type"] = "rate_limit"
-                receipt["retry_after"] = retry_sec
-                receipt["duration_seconds"] = time.time() - started
+                receipt.error = f"Rate limited (429): {resp.text[:300]}"
+                receipt.error_type = "rate_limit"
+                receipt.retry_after = retry_sec
+                receipt.duration_seconds = time.time() - started
                 return False, None, receipt
 
             if resp.status_code in (500, 502, 503, 504):
-                receipt["error"] = f"Transient HTTP {resp.status_code}: {resp.text[:300]}"
-                receipt["error_type"] = "transient_http"
-                receipt["retry_after"] = 5.0
-                receipt["duration_seconds"] = time.time() - started
+                receipt.error = f"Transient HTTP {resp.status_code}: {resp.text[:300]}"
+                receipt.error_type = "transient_http"
+                receipt.retry_after = 5.0
+                receipt.duration_seconds = time.time() - started
                 return False, None, receipt
 
             if resp.status_code != 200:
-                receipt["error"] = f"HTTP {resp.status_code}: {resp.text[:500]}"
-                receipt["error_type"] = "inference_error"
-                receipt["duration_seconds"] = time.time() - started
+                receipt.error = f"HTTP {resp.status_code}: {resp.text[:500]}"
+                receipt.error_type = "inference_error"
+                receipt.duration_seconds = time.time() - started
                 return False, None, receipt
 
             data = resp.json()
             choices = data.get("choices", [])
             if not choices:
-                receipt["error"] = "Empty choices in response"
-                receipt["error_type"] = "inference_error"
-                receipt["duration_seconds"] = time.time() - started
+                receipt.error = "Empty choices in response"
+                receipt.error_type = "inference_error"
+                receipt.duration_seconds = time.time() - started
                 return False, None, receipt
 
             text = choices[0].get("message", {}).get("content") or ""
             usage = data.get("usage", {})
-            receipt["usage"] = usage
-            
+            receipt.usage = usage
+
             reported_cost = usage.get("cost") if isinstance(usage, dict) else None
             if reported_cost is None:
                 reported_cost = data.get("cost")
             if isinstance(reported_cost, (int, float)):
-                receipt["cost"] = float(reported_cost)
-                receipt["cost_status"] = "reported_zero" if reported_cost == 0 else "billed"
+                receipt.cost = float(reported_cost)
+                receipt.cost_status = "reported_zero" if reported_cost == 0 else "billed"
 
-            receipt["status"] = "complete"
-            receipt["duration_seconds"] = time.time() - started
+            receipt.status = "complete"
+            receipt.duration_seconds = time.time() - started
             return True, text, receipt
 
         except httpx.TimeoutException:
-            receipt["error"] = f"Request timed out after {timeout_sec}s"
-            receipt["error_type"] = "timeout"
-            receipt["duration_seconds"] = time.time() - started
+            receipt.error = f"Request timed out after {timeout_sec}s"
+            receipt.error_type = "timeout"
+            receipt.duration_seconds = time.time() - started
             return False, None, receipt
         except Exception as e:
-            receipt["error"] = str(e)
-            receipt["error_type"] = "inference_error"
-            receipt["duration_seconds"] = time.time() - started
+            receipt.error = str(e)
+            receipt.error_type = "inference_error"
+            receipt.duration_seconds = time.time() - started
             return False, None, receipt

@@ -764,6 +764,19 @@ class ProviderReceipt(ClosedModel):
         return self
 
 
+def coerce_receipt(value: ProviderReceipt | dict[str, Any]) -> ProviderReceipt:
+    """Carrier coercion for the live provider path.
+
+    Parser-mutated models round-trip through JSON because pydantic does not
+    revalidate model instances by default; foreign plain dicts (third-party
+    providers) validate directly. Raises ValidationError on invalid
+    receipts; callers fail closed.
+    """
+    if isinstance(value, ProviderReceipt):
+        return ProviderReceipt.model_validate(value.model_dump(mode="json"))
+    return ProviderReceipt.model_validate(value)
+
+
 class PacketAudit(ClosedModel):
     total_batches_processed: int = Field(ge=0)
     total_tokens_consumed: int = Field(ge=0)

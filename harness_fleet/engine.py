@@ -24,6 +24,7 @@ from .models import (
     ProviderReceipt,
     RoutePolicy,
     TaskSpec,
+    coerce_receipt,
 )
 from .packer import iter_packed_batches
 from .providers.base import clean_llm_json
@@ -116,7 +117,7 @@ class Engine:
         route_offset: int = 0,
         route_attempt_limit: int | None = None,
         run_id: str | None = None,
-    ) -> tuple[bool, list[dict] | None, dict, str | None]:
+    ) -> tuple[bool, list[dict] | None, ProviderReceipt | None, str | None]:
         """Executes a single multi-item batch within a worker session."""
         batch = PackedBatch.model_validate(batch).model_dump(mode="json")
         batch_id = batch["batch_id"]
@@ -175,11 +176,11 @@ class Engine:
         if not ladder:
             earliest_retry = self.catalog.get_earliest_cooldown_retry()
             if earliest_retry > 0:
-                return False, None, {}, f"All matching routes are in active cooldown (earliest retry in {earliest_retry:.1f}s)."
-            return False, None, {}, "No enabled route has observed zero pricing or matches active policy."
+                return False, None, None, f"All matching routes are in active cooldown (earliest retry in {earliest_retry:.1f}s)."
+            return False, None, None, "No enabled route has observed zero pricing or matches active policy."
 
         last_err = "No attempts made"
-        last_receipt: dict[str, Any] = {}
+        last_receipt: ProviderReceipt | None = None
         routes_by_id = {r["id"]: r for r in self.catalog.data.get("routes", [])}
         batch_id = batch.get("batch_id", "b0")
 
@@ -193,7 +194,7 @@ class Engine:
             except ProviderResolutionError as exc:
                 # Fail-closed: an unresolvable route aborts the batch.
                 # There is no silent fallback to another provider.
-                return False, None, dict(last_receipt), str(exc)
+                return False, None, None, str(exc)
 
             import inspect
             prompt_kwargs: dict[str, Any] = {"session_id": session_id}
@@ -202,12 +203,45 @@ class Engine:
                 prompt_kwargs["policy"] = self.policy
 
             started_ts = time.time()
-            ok, response_text, receipt = provider.run_prompt(
+            ok, response_text, raw_receipt = provider.run_prompt(
                 route_id=route_id,
                 prompt=user_content,
                 system_prompt=self.task.render_instructions(),
                 **prompt_kwargs,
             )
+            try:
+                receipt = coerce_receipt(raw_receipt)
+            except ValidationError as exc:
+                last_err = f"Invalid provider receipt from '{route_id}': {exc}"
+                attempt_record = {
+                    "attempt_id": f"{run_id or 'adhoc'}:{batch_id}:{route_id}:{uuid.uuid4().hex[:8]}",
+                    "run_id": run_id,
+                    "batch_id": batch_id,
+                    "lease_attempt_number": (route_offset + 1) if route_offset is not None else 1,
+                    "route_id": route_id,
+                    "provider": provider_hint or "unknown",
+                    "task_name": self.task.name,
+                    "started_at": datetime.now(timezone.utc).isoformat(),
+                    "duration_seconds": time.time() - started_ts,
+                    "cost": None,
+                    "cost_status": "unknown",
+                    "usage": None,
+                    "retry_after": None,
+                    "error_type": "invalid_receipt",
+                    "error_message": last_err,
+                    "transport_status": "failed",
+                    "parse_status": "skipped",
+                    "schema_status": "skipped",
+                    "grounding_status": "skipped",
+                    "outcome": "transport_failed",
+                    "verified": False,
+                    "counts_against_budget": 1,
+                }
+                if self.store:
+                    self.store.record_inference_attempt(attempt_record)
+                if session:
+                    session.record_error(last_err)
+                continue
             last_receipt = receipt
 
             attempt_record = {
@@ -216,16 +250,16 @@ class Engine:
                 "batch_id": batch_id,
                 "lease_attempt_number": (route_offset + 1) if route_offset is not None else 1,
                 "route_id": route_id,
-                "provider": receipt.get("provider") or provider_hint or "unknown",
+                "provider": receipt.provider or provider_hint or "unknown",
                 "task_name": self.task.name,
                 "started_at": datetime.now(timezone.utc).isoformat(),
-                "duration_seconds": receipt.get("duration_seconds") or (time.time() - started_ts),
-                "cost": receipt.get("cost"),
-                "cost_status": receipt.get("cost_status"),
-                "usage": receipt.get("usage"),
-                "retry_after": receipt.get("retry_after"),
-                "error_type": receipt.get("error_type"),
-                "error_message": receipt.get("error"),
+                "duration_seconds": receipt.duration_seconds or (time.time() - started_ts),
+                "cost": receipt.cost,
+                "cost_status": receipt.cost_status,
+                "usage": receipt.usage,
+                "retry_after": receipt.retry_after,
+                "error_type": receipt.error_type,
+                "error_message": receipt.error,
                 "transport_status": "success",
                 "parse_status": "skipped",
                 "schema_status": "skipped",
@@ -235,26 +269,10 @@ class Engine:
                 "counts_against_budget": 1,
             }
 
-            try:
-                ProviderReceipt.model_validate(receipt)
-            except ValidationError as exc:
-                last_err = f"Invalid provider receipt from '{route_id}': {exc}"
-                attempt_record.update({
-                    "transport_status": "failed",
-                    "outcome": "transport_failed",
-                    "error_type": "invalid_receipt",
-                    "error_message": last_err,
-                })
-                if self.store:
-                    self.store.record_inference_attempt(attempt_record)
-                if session:
-                    session.record_error(last_err)
-                continue
-
             if not ok:
-                last_err = receipt.get("error", "Unknown provider error")
-                error_type = receipt.get("error_type")
-                retry_after = receipt.get("retry_after")
+                last_err = receipt.error or "Unknown provider error"
+                error_type = receipt.error_type
+                retry_after = receipt.retry_after
 
                 if error_type in ("rate_limit", "transient_http"):
                     # Temporarily cool down route without burning batch attempt budget (adaptive if retry_after is None)
@@ -283,7 +301,7 @@ class Engine:
 
             # Record cost to monitor zero-price guarantee & circuit breaker
             try:
-                self.catalog.record_cost(route_id, receipt.get("cost"), policy=self.policy)
+                self.catalog.record_cost(route_id, receipt.cost, policy=self.policy)
             except Exception as e:
                 attempt_record.update({
                     "transport_status": "circuit_breaker",
@@ -402,18 +420,24 @@ class Engine:
 
             # Record session success; migrate affinity to the route that verified.
             if session:
-                tokens = receipt.get("usage", {}).get("total_tokens", 0) if isinstance(receipt.get("usage"), dict) else 0
-                cost = receipt.get("cost", 0.0) or 0.0
-                session.record_batch_success(items_count=len(output_items), tokens=tokens, cost=cost)
+                usage = receipt.usage if isinstance(receipt.usage, dict) else {}
+                raw_total = usage.get("total_tokens", 0)
+                tokens = int(raw_total) if isinstance(raw_total, (int, float)) else 0
+                session.record_batch_success(
+                    items_count=len(output_items),
+                    tokens=tokens,
+                    cost=float(receipt.cost or 0.0),
+                )
                 session.migrate_route(
                     route_id,
                     (route_info.get("provider") if isinstance(route_info, dict) else None)
-                    or receipt.get("provider")
+                    or receipt.provider
                     or session.provider,
                 )
 
             return True, [item.model_dump(mode="json") for item in output_items], receipt, None
 
+        # Failure paths surface the last receipt (None when no attempt produced one).
         return False, None, last_receipt, last_err
 
     def _record_score_history(
@@ -452,8 +476,8 @@ class Engine:
         profile: Any | None = None,
         raw_items_factory: Callable[[], Iterable[InputItem | dict[str, Any]]] | None = None,
         parent_run_id: str | None = None,
-    ) -> dict:
-        """Stream input into the durable SQLite queue, then execute its batches."""
+    ) -> dict[str, Any]:
+        """Stream input into the durable SQLite queue, then execute its batches; returns the packet dict on success."""
         if concurrency < 1:
             raise ValueError("concurrency must be greater than 0")
         if max_attempts < 1:

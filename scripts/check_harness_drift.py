@@ -19,7 +19,6 @@ import subprocess
 import sys
 from pathlib import Path
 
-
 EXACT_FILES = (
     "scripts/check_harness_drift.py",
     "tests/test_route_policy_contract.py",

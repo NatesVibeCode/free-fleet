@@ -4,6 +4,8 @@ import re
 from abc import ABC, abstractmethod
 from typing import Any
 
+from ..models import ProviderReceipt
+
 
 def clean_llm_json(text: str | None) -> Any | None:
     """Robustly extracts and parses JSON from LLM responses.
@@ -108,6 +110,6 @@ class BaseProvider(ABC):
         timeout_sec: int = 120,
         session_id: str | None = None,
         policy: Any | None = None,
-    ) -> tuple[bool, str | None, dict]:
-        """Executes a prompt in a session. Returns (success, text_response, receipt_dict)."""
+    ) -> tuple[bool, str | None, ProviderReceipt]:
+        """Executes a prompt in a session. Returns (success, text_response, receipt)."""
         pass

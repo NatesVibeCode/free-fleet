@@ -83,7 +83,7 @@ def test_unrelated_400_does_not_retry(monkeypatch):
     monkeypatch.setattr("harness_fleet.providers.openrouter.httpx.Client", _ScriptedClient)
     ok, _, receipt = OpenRouterProvider(api_key="key").run_prompt("openrouter/m", _schema_prompt())
     assert ok is False
-    assert receipt["error_type"] == "inference_error"
+    assert receipt.error_type == "inference_error"
     assert _ScriptedClient.posts == 1
 
 
@@ -91,5 +91,5 @@ def test_free_suffix_does_not_manufacture_zero_cost(monkeypatch):
     monkeypatch.setattr("harness_fleet.providers.openrouter.httpx.Client", FakeClient)
     ok, _, receipt = OpenRouterProvider(api_key="key").run_prompt("openrouter/example:free", "prompt")
     assert ok is True
-    assert receipt["cost"] is None
-    assert receipt["cost_status"] == "unknown"
+    assert receipt.cost is None
+    assert receipt.cost_status == "unknown"

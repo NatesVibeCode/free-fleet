@@ -569,7 +569,7 @@ def test_opencode_timeout_classification():
     ok, text, receipt = prov.run_prompt("opencode/test-model", "test prompt", timeout_sec=5)
     assert ok is False
     assert text is None
-    assert receipt["error_type"] == "timeout"
+    assert receipt.error_type == "timeout"
 
 
 def test_fetch_hn_thread_comment_support(monkeypatch):
@@ -886,7 +886,7 @@ def test_demo_provider_trailing_garbage_json_recovery():
     prompt = 'instructions here\n{"input_items": [{"item_id": "i1", "sections": [{"slice_id": "full", "text": "deterministic text for verification"}]}], "output_schema": {"properties": {"items": {"items": {"properties": {"claims": {"type": "object", "properties": {"status": {"type": "string"}}}}}}}}}\nSome extra trailing garbage text'
     ok, resp, receipt = demo.run_prompt("demo", prompt)
     assert ok is True
-    assert receipt["status"] == "complete"
+    assert receipt.status == "complete"
     assert "i1" in resp
 
 
@@ -915,7 +915,7 @@ def test_demo_provider_disambiguates_repeated_quote_with_offsets():
     )
     ok, resp, receipt = demo.run_prompt("demo", prompt)
     assert ok is True
-    assert receipt["status"] == "complete"
+    assert receipt.status == "complete"
     quote = json.loads(resp)["items"][0]["quotes"][0]
     assert quote["start"] == 0
     assert quote["end"] == len(quote["text"])

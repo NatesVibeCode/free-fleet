@@ -12,11 +12,11 @@ every prompt.
 from __future__ import annotations
 
 from pathlib import Path
-from typing import Any
 
 from .harness import (
     CLIHarnessProvider,
     HarnessSpec,
+    ProviderReceipt,
     parse_json_object_stdout,
     run_error_receipt,
 )
@@ -60,10 +60,10 @@ class CursorProvider(CLIHarnessProvider):
         code: int,
         stdout: str,
         stderr: str,
-        receipt: dict[str, Any],
+        receipt: ProviderReceipt,
         started: float,
         workdir: Path | None = None,
-    ) -> tuple[bool, str | None, dict[str, Any]]:
+    ) -> tuple[bool, str | None, ProviderReceipt]:
         if code != 0:
             return run_error_receipt(code, stdout, stderr, receipt=receipt)
         return parse_json_object_stdout(stdout, receipt=receipt)

@@ -56,6 +56,7 @@ from .models import (
     DoctorReport,
     InputItem,
     ModelOutput,
+    ProviderReceipt,
     RoutePolicy,
     SortSpec,
     TaskSpec,
@@ -549,7 +550,9 @@ def cmd_test(args: argparse.Namespace) -> None:
     engine = Engine(task=task, store=store, policy=policy)
     ok, results, receipt, error = engine.execute_batch(batch)
     _emit(
-        {"ok": ok, "results": results, "receipt": receipt or None, "error": error},
+        {"ok": ok, "results": results,
+         "receipt": receipt.model_dump(mode="json") if isinstance(receipt, ProviderReceipt) else receipt,
+         "error": error},
         args.json,
         f"{'Passed' if ok else 'Failed'} one batch.\n{json.dumps(results if ok else {'error': error}, indent=2)}",
     )

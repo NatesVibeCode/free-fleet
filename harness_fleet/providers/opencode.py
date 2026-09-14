@@ -14,7 +14,7 @@ from pathlib import Path
 from typing import Any, Protocol
 
 from .base import BaseProvider
-from .harness import CLIHarnessProvider, HarnessSpec
+from .harness import CLIHarnessProvider, HarnessSpec, ProviderReceipt
 
 OPENCODE_SPEC = HarnessSpec(
     name="opencode",
@@ -52,8 +52,8 @@ def parse_opencode_events(
     stderr: str,
     code: int,
     *,
-    receipt: dict[str, Any],
-) -> tuple[bool, str | None, dict[str, Any]]:
+    receipt: ProviderReceipt,
+) -> tuple[bool, str | None, ProviderReceipt]:
     """Parse OpenCode ``--format json`` JSONL events into (ok, text, receipt)."""
     texts = []
     finished = False
@@ -79,25 +79,25 @@ def parse_opencode_events(
             c = part.get("cost")
             if c is not None:
                 costs.append(c)
-            receipt["usage"] = part.get("tokens")
+            receipt.usage = part.get("tokens")
         elif event_type == "error":
             last_err = str(event.get("error", ""))[:500]
 
     if code != 0 or not finished or not texts:
         err_msg = last_err or (stderr or stdout)[-500:] or f"Exit code {code}"
-        receipt["error"] = err_msg
+        receipt.error = err_msg
         if "429" in err_msg.lower() or "rate limit" in err_msg.lower():
-            receipt["error_type"] = "rate_limit"
-            receipt["retry_after"] = 10.0
+            receipt.error_type = "rate_limit"
+            receipt.retry_after = 10.0
         else:
-            receipt["error_type"] = "inference_error"
+            receipt.error_type = "inference_error"
         return False, None, receipt
 
     if costs and all(isinstance(c, (int, float)) for c in costs):
         total_cost = float(sum(costs))
-        receipt["cost"] = total_cost
-        receipt["cost_status"] = "reported_zero" if total_cost == 0 else "billed"
-    receipt["status"] = "complete"
+        receipt.cost = total_cost
+        receipt.cost_status = "reported_zero" if total_cost == 0 else "billed"
+    receipt.status = "complete"
     return True, "\n".join(texts), receipt
 
 
@@ -167,10 +167,10 @@ class OpenCodeProvider(CLIHarnessProvider):
         code: int,
         stdout: str,
         stderr: str,
-        receipt: dict[str, Any],
+        receipt: ProviderReceipt,
         started: float,
         workdir: Path | None = None,
-    ) -> tuple[bool, str | None, dict[str, Any]]:
+    ) -> tuple[bool, str | None, ProviderReceipt]:
         return parse_opencode_events(stdout, stderr, code, receipt=receipt)
 
 

@@ -5,11 +5,12 @@ import os
 import threading
 import time
 import uuid
-from typing import Any
+from typing import Any, Literal
 from urllib.parse import urlsplit
 
 import httpx
 
+from ..models import ProviderReceipt
 from .base import BaseProvider
 
 _shared_client: httpx.Client | None = None
@@ -106,7 +107,7 @@ class OpenAICompatibleProvider(BaseProvider):
         timeout_sec: int = 120,
         session_id: str | None = None,
         policy: Any | None = None,
-    ) -> tuple[bool, str | None, dict]:
+    ) -> tuple[bool, str | None, ProviderReceipt]:
         started = time.time()
         rid = uuid.uuid4().hex
 
@@ -123,22 +124,24 @@ class OpenAICompatibleProvider(BaseProvider):
 
         # Cost-safety: only assert reported_zero if verified local/free; otherwise unknown
         default_cost = 0.0 if self.is_local else None
-        default_cost_status = "reported_zero" if self.is_local else "unknown"
+        default_cost_status: Literal["reported_zero", "billed", "unknown"] = (
+            "reported_zero" if self.is_local else "unknown"
+        )
 
-        receipt = {
-            "id": rid,
-            "session_id": session_id,
-            "provider": self.provider_name,
-            "requested_route": route_id,
-            "status": "failed",
-            "cost": default_cost,
-            "cost_status": default_cost_status,
-            "usage": None,
-            "error": None,
-            "error_type": None,
-            "retry_after": None,
-            "duration_seconds": None,
-        }
+        receipt: ProviderReceipt = ProviderReceipt(
+            id=rid,
+            session_id=session_id,
+            provider=self.provider_name,
+            requested_route=route_id,
+            status="failed",
+            cost=default_cost,
+            cost_status=default_cost_status,
+            usage=None,
+            error=None,
+            error_type=None,
+            retry_after=None,
+            duration_seconds=None,
+        )
 
         headers = {"Content-Type": "application/json"}
         if self.api_key:
@@ -190,61 +193,61 @@ class OpenAICompatibleProvider(BaseProvider):
 
             if resp.status_code == 429:
                 retry_sec = _parse_retry_after(resp.headers.get("retry-after"))
-                receipt["error"] = f"Rate limited (429): {resp.text[:300]}"
-                receipt["error_type"] = "rate_limit"
-                receipt["retry_after"] = retry_sec
-                receipt["duration_seconds"] = time.time() - started
+                receipt.error = f"Rate limited (429): {resp.text[:300]}"
+                receipt.error_type = "rate_limit"
+                receipt.retry_after = retry_sec
+                receipt.duration_seconds = time.time() - started
                 return False, None, receipt
 
             if resp.status_code in (500, 502, 503, 504):
-                receipt["error"] = f"Transient HTTP {resp.status_code}: {resp.text[:300]}"
-                receipt["error_type"] = "transient_http"
-                receipt["retry_after"] = 5.0
-                receipt["duration_seconds"] = time.time() - started
+                receipt.error = f"Transient HTTP {resp.status_code}: {resp.text[:300]}"
+                receipt.error_type = "transient_http"
+                receipt.retry_after = 5.0
+                receipt.duration_seconds = time.time() - started
                 return False, None, receipt
 
             if resp.status_code != 200:
-                receipt["error"] = f"HTTP {resp.status_code}: {resp.text[:500]}"
-                receipt["error_type"] = "inference_error"
-                receipt["duration_seconds"] = time.time() - started
+                receipt.error = f"HTTP {resp.status_code}: {resp.text[:500]}"
+                receipt.error_type = "inference_error"
+                receipt.duration_seconds = time.time() - started
                 return False, None, receipt
 
             data = resp.json()
             choices = data.get("choices", [])
             if not choices:
-                receipt["error"] = "Empty choices in response"
-                receipt["error_type"] = "inference_error"
-                receipt["duration_seconds"] = time.time() - started
+                receipt.error = "Empty choices in response"
+                receipt.error_type = "inference_error"
+                receipt.duration_seconds = time.time() - started
                 return False, None, receipt
 
             text = choices[0].get("message", {}).get("content") or ""
             usage = data.get("usage", {})
-            receipt["usage"] = usage
+            receipt.usage = usage
 
             reported_cost = data.get("cost")
             if reported_cost is None and isinstance(usage, dict):
                 reported_cost = usage.get("cost")
             if isinstance(reported_cost, (int, float)):
-                receipt["cost"] = float(reported_cost)
-                receipt["cost_status"] = "reported_zero" if reported_cost == 0 else "billed"
+                receipt.cost = float(reported_cost)
+                receipt.cost_status = "reported_zero" if reported_cost == 0 else "billed"
             elif self.is_local:
-                receipt["cost"] = 0.0
-                receipt["cost_status"] = "reported_zero"
+                receipt.cost = 0.0
+                receipt.cost_status = "reported_zero"
             else:
-                receipt["cost"] = None
-                receipt["cost_status"] = "unknown"
+                receipt.cost = None
+                receipt.cost_status = "unknown"
 
-            receipt["status"] = "complete"
-            receipt["duration_seconds"] = time.time() - started
+            receipt.status = "complete"
+            receipt.duration_seconds = time.time() - started
             return True, text, receipt
 
         except httpx.TimeoutException:
-            receipt["error"] = f"Request timed out after {timeout_sec}s"
-            receipt["error_type"] = "timeout"
-            receipt["duration_seconds"] = time.time() - started
+            receipt.error = f"Request timed out after {timeout_sec}s"
+            receipt.error_type = "timeout"
+            receipt.duration_seconds = time.time() - started
             return False, None, receipt
         except Exception as e:
-            receipt["error"] = str(e)
-            receipt["error_type"] = "inference_error"
-            receipt["duration_seconds"] = time.time() - started
+            receipt.error = str(e)
+            receipt.error_type = "inference_error"
+            receipt.duration_seconds = time.time() - started
             return False, None, receipt

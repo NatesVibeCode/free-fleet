@@ -16,8 +16,8 @@ class RunnerStub:
 def test_missing_cost_is_unknown_not_zero():
     ok, _, receipt = OpenCodeProvider(runner=RunnerStub()).run_prompt("opencode/name-free", "prompt")
     assert ok is True
-    assert receipt["cost"] is None
-    assert receipt["cost_status"] == "unknown"
+    assert receipt.cost is None
+    assert receipt.cost_status == "unknown"
 
 
 def test_discovered_opencode_model_keeps_native_provider_prefix():

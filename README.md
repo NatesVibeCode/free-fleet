@@ -63,7 +63,7 @@ rank,item_id,score,identified_gap,fit_tier,primary_quote_text
 1,stripe.com,92,"Legacy billing migration",tier_1,"lead migration off legacy v1 billing pipeline to Kafka"
 ```
 
-Illustrative values only; real exports also include source URLs, digests, and quote details. Set your ICP and scoring rubric through `init --instructions` or a task JSON file. An exact source quote proves the text exists, not that a company will buy your product.
+Illustrative values only; real exports also include source URLs, digests, and quote details. Set your ICP and scoring rubric in the task's `TaskSpec` — a preset plus a task JSON file, or the studio's scoring panel. An exact source quote proves the text exists, not that a company will buy your product.
 
 ---
 
@@ -391,20 +391,29 @@ Manual entry:
 ## Harness Studio (Local UI)
 
 `harness-fleet studio` serves a localhost-only UI over the same SQLite control plane
-(default `http://127.0.0.1:8080`; honor `--workspace-root`, `--port`, and `--db`).
+(default `http://127.0.0.1:8080`; honors `--workspace-root`, `--port`, and `--db`).
+For a disposable preview workspace seeded with a demo task, run
+`scripts/studio_preview.sh`. The page is read from disk per request, so UI edits only
+need a browser refresh; Python changes need a restart.
 
 Pick harnesses and their models, then build sequenced steps with per-step routes,
 budgets, and an explicit paid opt-in that records a trust note. Paid routes never run
 implicitly.
 
-The **Scoring contract** panel is a view over the task's typed `TaskSpec`. It lists the
-evidence checklist items, their points, source weights, recency half-lives, and the
-fixed 0–100 tier bands. Saving writes a **new immutable task revision** and advances the
-active pointer; the previous revision stays readable as lineage. Score, fit tier, and
-pass/fail are computed by the pipeline from checklist answers and cannot be set in the
-UI — the panel rejects any attempt to edit them.
+The **Scoring contract** panel is a view over the task's typed `TaskSpec`. It shows the
+evidence checklist items, their points, source weights, recency half-lives, and the fixed
+0–100 tier bands, and it warns when the checklist does not total the cap. Saving writes a
+**new immutable task revision** and advances the active pointer; the previous revision
+stays readable as lineage. **Duplicate…** branches a tuned task under a new name. Score,
+fit tier, and pass/fail are computed by the pipeline from checklist answers and cannot be
+edited here — the panel rejects any attempt to set them.
+
+Saves carry an `If-Match` precondition, so a second tab that loaded an older revision gets
+`412` instead of overwriting newer work, and the server refuses cross-origin requests so a
+page you visit cannot drive the studio.
 
 ```bash
+scripts/studio_preview.sh                          # disposable workspace on :8099
 harness-fleet studio --workspace-root "$PWD" --port 8080
 ```
 

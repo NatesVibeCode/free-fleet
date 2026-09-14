@@ -3,6 +3,11 @@ __pycache__/
 *$py.class
 *.so
 .pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.tox/
+.hypothesis/
+node_modules/
 .coverage
 htmlcov/
 dist/

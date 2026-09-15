@@ -22,7 +22,7 @@ from harness_fleet.catalog import PriceState, RouteCatalog
 from harness_fleet.engine import Engine
 from harness_fleet.models import RoutePolicy
 from harness_fleet.store import HarnessStore
-from harness_fleet.task import create_task_from_preset
+from harness_fleet.task import PARTNER_CHECKLIST, create_task_from_preset
 
 
 def _partner_run(tmp_path: Path, run_id: str = "board-run") -> Path:
@@ -69,10 +69,7 @@ def test_payload_is_schema_driven_and_never_invents_scores(tmp_path):
     assert payload["run"]["run_id"] == "board-run"
     assert payload["stats"]["records"] == 3
     # Labels come from the task's own schema, not a hardcoded partner vocabulary.
-    assert {c["item_id"] for c in payload["checklist"]} == {
-        "q1_target_stack", "q2_service_model", "q3_industry_verticals",
-        "q4_geography_delivery", "q5_vendor_alliances", "q6_case_study_proof",
-    }
+    assert {c["item_id"] for c in payload["checklist"]} == set(PARTNER_CHECKLIST)
     assert all(c["label"] and c["points"] > 0 for c in payload["checklist"])
     assert payload["checklist_total"] == 100
     assert {a["key"] for a in payload["attributes"]} >= {"target_stack", "service_model", "vendor_alliances"}
@@ -142,7 +139,18 @@ def test_http_endpoints_and_host_guard(tmp_path):
         assert len(payload["partners"]) == 3
 
         with urlopen(f"http://127.0.0.1:{port}/api/runs", timeout=20) as response:
-            assert json.loads(response.read())["runs"][0]["run_id"] == "board-run"
+            runs = json.loads(response.read())
+        assert runs["runs"][0]["run_id"] == "board-run"
+        assert runs["current"] == "board-run"
+
+        # The page switches runs with ?run=, so the API has to honour it.
+        with urlopen(f"http://127.0.0.1:{port}/api/board?run=board-run", timeout=20) as response:
+            assert json.loads(response.read())["run"]["run_id"] == "board-run"
+        with pytest.raises(urllib.error.HTTPError) as unknown_run:
+            urlopen(f"http://127.0.0.1:{port}/api/board?run=does-not-exist", timeout=20)
+        assert unknown_run.value.code == 404
+        with urlopen(f"http://127.0.0.1:{port}/api/runs?run=does-not-exist", timeout=20) as response:
+            assert json.loads(response.read())["current"] == "does-not-exist"
 
         with pytest.raises(urllib.error.HTTPError) as missing:
             urlopen(f"http://127.0.0.1:{port}/api/nope", timeout=20)

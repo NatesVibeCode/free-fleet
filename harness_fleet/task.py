@@ -72,34 +72,54 @@ ACCOUNT_HALF_LIVES = {
     "hiring_or_trigger": 21.0,
     "firmographic_fit": 365.0,
 }
+# Revenue-weighted partner checklist. Every question is answerable from the
+# sources the sourcing plan actually reaches — the partner's own site, their ATS
+# board, vendor registries, review directories, and communities — and each one
+# bears on whether this partner can generate revenue with us.
 PARTNER_CHECKLIST = {
-    "q1_target_stack": 20,
-    "q2_service_model": 20,
-    "q3_industry_verticals": 15,
-    "q4_geography_delivery": 15,
-    "q5_vendor_alliances": 15,
-    "q6_case_study_proof": 15,
+    "q1_billable_delivery": 15,
+    "q2_stack_delivery": 15,
+    "q3_delivery_hiring": 10,
+    "q4_client_outcome": 15,
+    "q5_commercial_scale": 5,
+    "q6_vendor_alliance": 10,
+    "q7_vertical_focus": 5,
+    "q8_independent_validation": 15,
+    "q9_published_engineering": 5,
+    "q10_growth_signal": 5,
 }
 PARTNER_CHECKLIST_DESCRIPTIONS = {
-    "q1_target_stack": "True only when source evidence verifies active delivery capability in the target or adjacent tech stack.",
-    "q2_service_model": "True only when source evidence confirms turnkey systems integration, migration, or architecture practice (false for pure SaaS vendors or hourly staff aug).",
-    "q3_industry_verticals": "True only when source evidence confirms client delivery experience in specific industry verticals.",
-    "q4_geography_delivery": "True only when source evidence confirms physical headquarters and engineering delivery locations.",
-    "q5_vendor_alliances": "True only when source evidence confirms certified partner tiers with adjacent vendors (e.g. AWS Premier, Snowflake Elite).",
-    "q6_case_study_proof": "True only when source evidence verifies a concrete project outcome, transformation metric, or client case study.",
+    "q1_billable_delivery": "True only when the source shows they sell project-based delivery (engagement, statement of work, implementation, managed service). False for licence resellers and pure staff augmentation.",
+    "q2_stack_delivery": "True only when the source evidences delivery of the target technology for named clients.",
+    "q3_delivery_hiring": "True only when an open requisition on their own ATS board is for a delivery or engineering role in the target stack.",
+    "q4_client_outcome": "True only when the source names a client and a concrete outcome or metric, not a capability claim.",
+    "q5_commercial_scale": "True only when published commercial terms appear: minimum project size, hourly rate, or employee count.",
+    "q6_vendor_alliance": "True only when a vendor partner tier, certification, or marketplace listing is stated.",
+    "q7_vertical_focus": "True only when one industry vertical has repeat delivery proof, not a list of every sector served.",
+    "q8_independent_validation": "True only when a source that is not the partner's own marketing vouches for delivery: a review, a vendor case study, or a community mention.",
+    "q9_published_engineering": "True only when they publish technical work of their own (engineering blog, conference talk, open source) showing the practice is real.",
+    "q10_growth_signal": "True only when a dated growth event appears in the last twelve months: funding, acquisition, new office, new practice, or an award.",
 }
 PARTNER_EVIDENCE_TERMS = [
     "partner", "consulting", "implementation", "client", "integrat", "migration",
     "solutions architect", "practice", "deployment", "certified", "managed service",
-    "case study", "delivery", "professional services", "enterprise", "vertical", "headquarters",
+    "case study", "delivery", "professional services", "enterprise", "vertical",
+    "engagement", "statement of work", "retainer", "minimum project", "hourly rate",
+    "review", "recommend", "hiring", "requisition", "award", "funding", "acquisition",
 ]
+# Recency calibration in days: a live requisition or a growth announcement goes
+# stale fast; stack and commercial facts last a year or more.
 PARTNER_HALF_LIVES = {
-    "q1_target_stack": 180.0,
-    "q2_service_model": 365.0,
-    "q3_industry_verticals": 365.0,
-    "q4_geography_delivery": 365.0,
-    "q5_vendor_alliances": 180.0,
-    "q6_case_study_proof": 180.0,
+    "q1_billable_delivery": 365.0,
+    "q2_stack_delivery": 180.0,
+    "q3_delivery_hiring": 21.0,
+    "q4_client_outcome": 180.0,
+    "q5_commercial_scale": 365.0,
+    "q6_vendor_alliance": 180.0,
+    "q7_vertical_focus": 365.0,
+    "q8_independent_validation": 180.0,
+    "q9_published_engineering": 180.0,
+    "q10_growth_signal": 90.0,
 }
 
 PRESETS: dict[str, dict[str, Any]] = {
@@ -212,27 +232,31 @@ PRESETS: dict[str, dict[str, Any]] = {
         "required": ["checklist", "identified_gap", "reasoning"],
     },
     "partner-research": {
-        "instructions": "Evaluate potential implementation partner fit by answering the 6-question gatekeeper checklist, identify the verified partner practice, and cite verbatim evidence from the multi-source dossier. The pipeline computes the completeness score and tier.",
+        "instructions": "Decide whether this implementation partner can generate revenue with us: answer the 10-question revenue checklist, name the verified practice, state how we would make money together, and cite verbatim evidence from the multi-source dossier. The pipeline computes the score and tier.",
         "checklist": PARTNER_CHECKLIST,
         "evidence_terms": PARTNER_EVIDENCE_TERMS,
         "recency_half_lives": PARTNER_HALF_LIVES,
         "properties": {
             "checklist": _checklist_property(PARTNER_CHECKLIST, PARTNER_CHECKLIST_DESCRIPTIONS),
             "score": _computed_score_property(
-                "Partner fit: 85-100 all 6 questions answered with multi-source proof (Tier 1), 70-84 at least 5 questions answered (Tier 2), 50-69 partial fit (Tier 3), 0-49 missing key criteria, staff-aug only, or SaaS vendor."
+                "Partner revenue fit: 85-100 delivery proven, independently validated and growing (Tier 1), 70-84 strong delivery with some gaps (Tier 2), 50-69 plausible but thin or unproven (Tier 3), 0-49 licence reseller, staff-aug only, or no delivery evidence."
             ),
             "identified_practice": {
                 "type": "string",
                 "description": "The verified partner practice, capability, or core service offering, named exactly as the source names it.",
             },
+            "revenue_hypothesis": {
+                "type": "string",
+                "description": "One sentence on how we would make money with them (co-sell, referral, reseller, or subcontract), tied only to cited evidence.",
+            },
             "answers": {
                 "type": "object",
-                "description": "Structured answers to the gatekeeper questions, supported by cited quotes.",
+                "description": "Structured attributes. Use an empty list or empty string when the sources do not state it — never guess.",
                 "properties": {
                     "target_stack": {
                         "type": "array",
                         "items": {"type": "string"},
-                        "description": "Verified technologies and platforms implemented for clients.",
+                        "description": "Technologies and platforms they have implemented for clients.",
                     },
                     "service_model": {
                         "type": "string",
@@ -242,23 +266,69 @@ PRESETS: dict[str, dict[str, Any]] = {
                     "industry_verticals": {
                         "type": "array",
                         "items": {"type": "string"},
-                        "description": "Client industry verticals with verified delivery proof.",
+                        "description": "Industry verticals with delivery proof.",
                     },
-                    "geography_delivery": {
+                    "delivery_coverage": {
                         "type": "string",
-                        "description": "Physical headquarters and delivery locations.",
+                        "description": "Headquarters and delivery locations or regions they can serve.",
                     },
                     "vendor_alliances": {
                         "type": "array",
                         "items": {"type": "string"},
-                        "description": "Certified partner tiers and technology vendor badges.",
+                        "description": "Certified partner tiers and vendor badges, named as the source names them.",
                     },
                     "case_study_outcome": {
                         "type": "string",
-                        "description": "Specific project outcome or transformation metric achieved for a client.",
+                        "description": "A specific project outcome or metric achieved for a named client.",
+                    },
+                    "client_logos": {
+                        "type": "array",
+                        "items": {"type": "string"},
+                        "description": "Clients named in the sources. Named clients are the strongest revenue proof.",
+                    },
+                    "hiring_signals": {
+                        "type": "array",
+                        "items": {"type": "string"},
+                        "description": "Open delivery or engineering roles with seniority and location, from their ATS board.",
+                    },
+                    "commercial_terms": {
+                        "type": "object",
+                        "description": "Published commercial terms. Empty strings when the sources do not state them.",
+                        "properties": {
+                            "min_project_size": {"type": "string", "description": "Minimum engagement size as published (for example '$50,000+')."},
+                            "hourly_rate": {"type": "string", "description": "Published hourly or day rate range."},
+                            "employees": {"type": "string", "description": "Employee or delivery-team count as published."},
+                        },
+                        "required": ["min_project_size", "hourly_rate", "employees"],
+                        "additionalProperties": False,
+                    },
+                    "revenue_motion": {
+                        "type": "string",
+                        "enum": ["co_sell", "referral", "reseller", "subcontract", "unknown"],
+                        "description": "How revenue would most plausibly flow between us and them.",
+                    },
+                    "third_party_mentions": {
+                        "type": "array",
+                        "items": {"type": "string"},
+                        "description": "Independent mentions that vouch for delivery: a review, a vendor case study, or a community thread. Name the source.",
+                    },
+                    "engineering_output": {
+                        "type": "array",
+                        "items": {"type": "string"},
+                        "description": "Their own technical output: talks, blog posts, open-source repositories.",
+                    },
+                    "growth_signals": {
+                        "type": "array",
+                        "items": {"type": "string"},
+                        "description": "Dated growth events from the last twelve months: funding, acquisition, new office, new practice, award.",
+                    },
+                    "evidence_categories": {
+                        "type": "array",
+                        "items": {"type": "string"},
+                        "description": "The source categories actually cited, copied from the dossier metadata.",
                     },
                 },
-                "required": ["target_stack", "service_model", "industry_verticals", "geography_delivery", "vendor_alliances", "case_study_outcome"],
+                "required": ["target_stack", "service_model", "industry_verticals", "delivery_coverage", "vendor_alliances", "case_study_outcome", "client_logos", "hiring_signals", "commercial_terms", "revenue_motion", "third_party_mentions", "engineering_output", "growth_signals", "evidence_categories"],
                 "additionalProperties": False,
             },
             "source_diversity_count": {
@@ -272,10 +342,10 @@ PRESETS: dict[str, dict[str, Any]] = {
             },
             "reasoning": {
                 "type": "string",
-                "description": "Short explanation grounded in the cited quotes, naming the multi-source evidence behind the checklist and answers.",
+                "description": "Short explanation grounded in the cited quotes, naming the evidence behind the checklist and the revenue hypothesis.",
             },
         },
-        "required": ["checklist", "identified_practice", "reasoning"],
+        "required": ["checklist", "identified_practice", "revenue_hypothesis", "reasoning"],
     },
 }
 

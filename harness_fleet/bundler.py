@@ -41,6 +41,20 @@ COMMUNITY_DOMAINS = (
     "substack.com",
     "medium.com",
     "dev.to",
+    # The community backends the fleet searches. Without these, an HN thread or
+    # a Reddit post was filed as `general_web` and — in the sourcing runner —
+    # could be mistaken for a partner domain.
+    "news.ycombinator.com",
+    "reddit.com",
+    "redd.it",
+    "stackoverflow.com",
+    "stackexchange.com",
+    "serverfault.com",
+    "superuser.com",
+    "lobste.rs",
+    "lemmy.world",
+    "lemmy.ml",
+    "programming.dev",
 )
 
 ATS_DOMAINS = (

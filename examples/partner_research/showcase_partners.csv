@@ -1,0 +1,2325 @@
+item_id,text,source_uri,source_count,source_categories
+trace3.com,"# Multi-Source Evidence Dossier: trace3.com
+
+=== SECTION: FIRST_PARTY_PRACTICE (URI: https://www.trace3.com/) ===
+Trace3 empowers financial institutions with cutting-edge technology solutions tailored to their unique needs. With over 20 years of expertise and a team of 100+ skilled engineers, we provide comprehensive services, including managed IT, staff augmentation, project execution, product management, and reselling. Our deep industry knowledge spans banking, credit unions, insurance, and investment firms, ensuring that we deliver right-sized innovations that enhance efficiency, accelerate time-to-market, and drive competitive advantage. At Trace3, we are committed to delivering technology-driven strategies that help financial organizations navigate complexity, mitigate risk, and achieve sustainable growth in an evolving digital landscape.
+
+=== SECTION: ATS_REQUISITIONS (URI: https://job-boards.greenhouse.io/trace3) ===
+Create a Job Alert
+
+Level-up your career by having opportunities at Trace3 sent directly to your inbox.
+
+Create alert
+
+=== SECTION: ATS_REQUISITIONS (URI: https://jobs.ashbyhq.com/trace3) ===
+Jobs
+
+=== SECTION: FIRST_PARTY_PRACTICE (URI: https://blog.trace3.com/the-path-to-crypto-agility-and-quantum-readiness) ===
+Classical computing is binary; everything you and I run today ultimately reduces to bits, 0s and 1s toggling through transistors and logic gates. Quantum computing isn’t just faster; it’s different. Qubits can exist in many potential states before measurement and can be
+
+entangled
+
+, enabling correlations impossible in classical systems. Quantum algorithms exploit this structure to tackle certain problems with massive parallelism. That’s why quantum will eventually upend some of our most relied‑upon cryptosystems.
+
+We’re also seeing
+
+real progress
+
+, not just hype: vendors such as IBM, Google, and Quantinuum are pushing qubit counts past the 1,000 mark, demonstrating early error‑corrected
+
+logical qubits
+
+and tracking improvements via
+
+quantum volume
+
+(a metric that better reflects practical capability). Industry roadmaps now sketch a credible path toward cryptographically relevant machines.
+
+The timeline remains uncertain. Optimists argue we could reach CRQC (cryptographically relevant quantum computing) in less than 5 years, while skeptics think it may take multiple decades due to error‑correction scaling. Regardless of the exact timeline, the extremely high stakes and potentially catastrophic consequences of a quantum breakthrough occurring before we are prepared justify taking action now.
+
+The impending crypto crisis
+
+Once CRQC is achieved, today’s public-key encryption will no longer hold. Shor’s algorithm makes it possible to factor large numbers and solve elliptic-curve discrete log problems in polynomial time, instantly undermining the math that protects RSA and ECC. In practical terms, any system relying on those algorithms — which is almost every secure system today — would be exposed overnight.
+
+What will break?
+
+The short answer is… nearly everything. Effectively anything that uses RSA or ECC asymmetric key cryptography will be exposed.
+
+Quantum compromise would ripple through every layer of our digital infrastructure:
+
+Internet security:
+
+TLS/HTTPS, VPNs, and PKI certificates would no longer be trustworthy.
+
+Identity and access:
+
+Smartcards, badges, and FIDO tokens could be cloned or spoofed.
+
+Software assurance:
+
+Code-signing and email encryption mechanisms would fail.
+
+Data security:
+
+File encryption, databases, backups, cloud APIs and SaaS.
+
+Critical infrastructure:
+
+IoT, OT, and edge devices would be vulnerable to interception and tampering
+
+A clear and present danger, even today!
+
+Most importantly, the danger isn’t limited to the future. Adversaries are already collecting encrypted communications data today, with the intent to decrypt it once quantum capabilities arrive. This strategy, known as Harvest Now, Decrypt Later (HNDL), means that even data you consider secure right now could be exposed years from now when quantum computers catch up.
+
+National security agencies including the NSA, CISA, and NIST have warned this represents a long-term strategic risk to both government and industry. The only defence is to start adopting quantum-safe cryptography now, before attackers have a reason to use it against you
+
+Preparing for a Quantum-Resilient Future
+
+The good news is that the world isn’t starting from scratch. The National Institute of Standards and Technology (NIST) has completed its first round of post-quantum cryptography (PQC) selections. The two main algorithms selected, Kyber and Dilithium, form the foundation of post-quantum encryption and digital-signature standards. These algorithms are designed to withstand quantum attacks while still being efficient on classical hardware. For enterprises, this means that production-ready, standardized tools for quantum-safe migration now exist.
+
+Global governments and regulators are no longer in wait-and-see mode:
+
+U.S. NSM-10
+
+requires all federal agencies to complete their PQC transition by
+
+2035
+
+.
+
+UK NCSC
+
+and
+
+EU
+
+programs are already in progress, with similar completion timelines (2030–2035).
+
+Financial regulators
+
+—including BIS, the G7, and FS-ISAC—are warning that delayed adoption could pose systemic financial risk.
+
+Regulation is effectively setting the floor for compliance; private-sector readiness must meet or exceed it to avoid being the weak link.
+
+Designing for “Crypto-Agility”
+
+A rapid, full migration to architectures that exclusively support post-quantum cryptography (PQC) can be risky. Many existing systems, legacy applications, and older clients depend on classical cryptographic libraries and protocols. Moving too quickly could cause major compatibility issues or even downtime.
+
+Because the timeline for achieving cryptographically relevant quantum computing (CRQC) is still uncertain, the smart approach is a
+
+measured and informed migration
+
+. Progress should be guided by a
+
+comprehensive cryptographic inventory
+
+and
+
+threat modeling assessments
+
+, to pinpoint where sensitive data is most at risk (now and in the future), where PQC support already exists, and how each phase of migration will affect operations.
+
+In the near term, organizations should prioritize
+
+crypto-agility
+
+. Crypto-agility is the process of designing systems and applications that can easily swap out cryptographic algorithms and keys without re-engineering core software or infrastructure. This flexibility ensures that future upgrades, including PQC adoption, can happen with minimal disruption.
+
+A crypto-agile architecture allows you to:
+
+Swap in new algorithms rapidly as standards evolve.
+
+Deploy
+
+hybrid models
+
+, where classical and PQC algorithms run together for transition periods.
+
+Future-proof your systems against whatever comes next, quantum or otherwise.
+
+This approach avoids expensive re-engineering every time a new standard, threat, or vulnerability emerges.
+
+A phased approach to migration
+
+Transitioning to PQC isn’t a single project; it’s a
+
+programmatic shift
+
+. A structured, four-phase approach ensures a smooth and measurable migration:
+
+1.
+
+Discover & Inventory
+
+Catalog every cryptographic asset (algorithms, key lengths, certificates, and libraries).
+
+Use
+
+edge scanning
+
+to locate TLS endpoints and legacy protocols.
+
+Build a
+
+Crypto Bill of Materials (CBOM)
+
+, a machine-readable list of crypto components across systems and dependencies.
+
+2.
+
+Assess & Prioritize
+
+Conduct
+
+independent readiness assessments
+
+to benchmark preparedness.
+
+Threat-model
+
+systems vulnerable to “Harvest Now, Decrypt Later.”
+
+Run
+
+table-top exercises
+
+simulating CRQC scenarios with executive and technical teams.
+
+Perform
+
+gap analysis
+
+against emerging NIST and regulatory timelines.
+
+3.
+
+Monitor & Test
+
+4.
+
+Implement in Phases
+
+Execute staged rollouts across systems and vendors.
+
+Begin with hybrid algorithms, then transition fully once stable
+
+The Time to Act is Now
+
+Quantum timelines are uncertain, but
+
+migration timelines are not
+
+. Even a conservative enterprise migration can take several years, and every year of delay increases your risk exposure. With standards finalized, regulatory frameworks in place, and vendor tooling already available, there’s no reason to wait. The organizations that move now will not only protect their data, but also position themselves as trusted leaders in a post-quantum world.
+
+=== SECTION: FIRST_PARTY_PRACTICE (URI: https://www.trace3.com/announcements) ===
+Trace3 announced its intent to complete a carve-out acquisition of Calian Group’s (TSX:CGY) U.S. Commercial IT business, expanding Trace3’s national footprint and strengthening its managed services capabilities for enterprise clients.
+
+Trace3 announced a strategic partnership with Anthropic to help organizations accelerate the adoption of Claude across the enterprise. Together, the companies will enable clients to move beyond AI experimentation by designing, deploying, and scaling secure, governed AI solutions that deliver measurable business outcomes.
+
+Technology solutions provider and digital transformation consultancy Trace3 announced the appointments of Robin Lykins as Chief People Officer and Sean Middleton as Chief Transformation Officer. These new roles reflect a deliberate shift in how Trace3 builds its future, expanding the leadership team as the company sharpens execution, scales the business, and advances long-term priorities.
+
+Trace3 today unveiled its latest AI Factory, launched in collaboration with Cisco and NVIDIA, bringing the Cisco Secure AI Factory with NVIDIA to market as a secure, scalable option for enterprise technology leaders building AI closer to where their data lives. Cisco and NVIDIA introduced the Cisco Secure AI Factory with NVIDIA to help enterprises build and secure data centers for AI workloads, and Cisco AI Pods serve as the modular building blocks of that architecture.
+
+Advanced technology solutions and services provider Trace3 announced it’s now recognized as a Cisco Preferred Partner across all six portfolios in Cisco’s new 360 Partner Program: Cloud and AI Infrastructure, Services, Collaboration, Networking, Security, and Splunk. This industry-leading recognition reflects how Trace3 designs, implements, and operates Cisco-powered environments that help clients run, secure, and optimize their most critical systems.
+
+Trace3 Managed Services announced it successfully completed the independent audits required to deliver Cisco Powered Services in Campus Access, Webex Contact Center, and Cloud Calling. This designation recognizes the company’s long‑term investment in helping clients run, secure, and optimize their most critical Cisco‑powered environments.
+
+Trace3 today announced that funds managed by affiliates of Apollo (NYSE: APO) (the “Apollo Funds”) completed the acquisition of the company from American Securities, which will retain a significant minority equity interest. The transaction fuels Trace3’s new phase of growth, which is focused on expanded capabilities across emerging technology, artificial intelligence, cloud, data and analytics, and cybersecurity.
+
+=== SECTION: GENERAL_WEB (URI: https://finance.yahoo.com/news/trace3-enters-era-growth-innovation-160000888.html?fr=sycsrp_catchall) ===
+Joe Quaglia Named Chief Executive Officer
+
+IRVINE, Calif., November 03, 2025
+
+--(
+
+BUSINESS WIRE
+
+)--Trace3 today announced that funds managed by affiliates of Apollo (NYSE: APO) (the ""Apollo Funds"") completed the acquisition of the company from American Securities, which will retain a significant minority equity interest. The transaction fuels
+
+Trace3
+
+'s new phase of growth, which is focused on expanded capabilities across emerging technology, artificial intelligence, cloud, data and analytics, and cybersecurity.
+
+As part of this next chapter, Joe Quaglia will succeed Rich Fennessy as Chief Executive Officer of Trace3, effective immediately. Fennessy led Trace3 through a period of record growth and innovation. He will remain on the board of directors and transition to the role of Trace3 Executive Chairman, continuing to support the company in this exciting next phase.
+
+""Trace3's next chapter is about scaling our impact,"" new CEO Quaglia said. ""With Apollo's partnership, we're unlocking opportunities to bring innovation and advanced solutions to our clients faster and at greater scale. This is more than a financial transaction, it's the beginning of a bold evolution for our business to better support our partners, our clients, and our teammates.""
+
+Quaglia has been instrumental in expanding Trace3's
+
+capabilities
+
+and
+
+footprint
+
+. Drawing on the experience and relationships built over his 39-year career, his leadership has strengthened the company's partnerships, broadened and deepened its technical expertise, and further enriched Trace3's distinctive company culture. Through his strategic vision centered on innovation, integrity, and client success, Quaglia will guide Trace3's continued growth in today's ever-changing technology landscape.
+
+""We believe Trace3 is uniquely positioned at the intersection of technology, innovation, and execution,"" said Robert Kalsow-Ramos, Partner at Apollo. ""Amid rising demand for IT tools and solutions that are tailored and strategic, we are excited to work alongside the Trace3 team to advance its mission of empowering clients to embrace AI and digital transformation with confidence.""
+
+""The Trace3 team has built an exceptional business and culture focused on innovation and client success,"" added Kevin Penn, Partner at American Securities. ""We're proud of what the company has achieved and are excited to continue our partnership alongside Apollo Funds. We look forward to supporting Trace3's continued expansion.""
+
+""This milestone represents a powerful validation of the Trace3 brand, culture, and people,"" said Fennessy, Executive Chairman of Trace3. ""With the support of Apollo Funds and Joe's leadership, Trace3 is poised to redefine what's possible for our clients and partners. The foundation we've built has never been stronger.""
+
+=== SECTION: GENERAL_WEB (URI: https://www.apollo.com/insights-news/pressreleases/2025/08/apollo-funds-reach-agreement-with-american-securities-to-acquire-trace3-a-leading-technology-solutions-provider-driving-adoption-of-next-generation-technology-and-ai-3131306) ===
+Strategic Investment to Accelerate Trace3’s Growth and Expand Solutions Across Security, Hybrid Cloud and AI
+
+IRVINE, Calif. and NEW YORK, Aug.  11, 2025  (GLOBE NEWSWIRE) -- Apollo (NYSE: APO) today announced that funds managed by its affiliates (the “Apollo Funds”) have agreed to acquire Trace3, a leading provider of enterprise and commercial technology solutions, from American Securities. Financial terms were not disclosed. American Securities will retain a significant minority equity interest in the company.
+
+Trace3 is a leading digital transformation and IT solutions provider to commercial and enterprise clients, including many of the Fortune 500. Since its founding in 2002, Trace3 has established a national, market-leading position in the technology solutions provider space with significant expertise in artificial intelligence, cloud, security, data and analytics, managed services, data center infrastructure and emerging technology. The company is well positioned to benefit from strong demand for next-generation IT infrastructure and services as digital transformation and AI adoption continue to accelerate.
+
+“The partnership with Apollo is a powerful testament to the quality of our brand, our people and our consistent track record of growth,” said Rich Fennessy, Chief Executive Officer of Trace3. “They embrace our unwavering commitment to innovation, technical excellence and deep client relationships. Together, we’re poised to accelerate the Company’s trajectory while preserving the special culture that continues to attract the best talent in technology.”
+
+“Trace3 is a recognized leader in enterprise IT, with a strong culture of innovation and a track record of delivering critical and cutting-edge products and services to its broad client base,” said Robert Kalsow-Ramos, Partner at Apollo. “We see a meaningful opportunity to support Trace3’s efforts to meet AI-related demand across their client base and expand high-value service offerings while pursuing strategic M&A to help accelerate the company’s growth trajectory. We’re excited to partner with the Trace3 team in this next chapter of growth.”
+
+“Trace3’s management team has done an exceptional job scaling the business, expanding its capabilities and establishing the company as a trusted partner in delivering cutting-edge technology solutions. We’re proud to have supported their growth, which reflects American Securities’ strategy of partnering with strong teams in sectors where we can add lasting value. We look forward to continuing our partnership alongside Apollo and the Trace3 team as the company enters its next phase,” said Kevin Penn, Managing Director of American Securities.
+
+Apollo has deep experience successfully investing in the IT services and distribution space, including prior investments by Apollo-managed funds in Presidio and TD SYNNEX.
+
+The transaction is subject to customary closing conditions and regulatory approvals.
+
+Citi served as lead financial advisor, Wells Fargo and Royal Bank of Canada also served as financial advisors, and Paul, Weiss, Rifkind, Wharton & Garrison LLP served as legal counsel to the Apollo Funds. Guggenheim Securities, LLC served as financial advisor and Kirkland & Ellis LLP served as legal counsel to Trace3 and American Securities.
+
+About Trace3
+
+Trace3 is a premier provider of technology consultation services and advanced IT solutions. Founded in 2002, Trace3 empowers organizations to embrace digital transformation through elite expertise and insightful innovation. With deep roots in the data center, Trace3 offers a broad mix of end-to-end technology services and solutions. These range from artificial intelligence and data insights to cloud computing and security consulting. Trace3 also maintains a Venture Capital (VC) CXO briefing program with a sharp focus on emerging technologies and provides clients with extensive research focused on the latest IT trends. For more information, visit
+
+www.trace3.com
+
+.
+
+About Apollo
+
+Apollo is a high-growth, global alternative asset manager. In our asset management business, we seek to provide our clients excess return at every point along the risk-reward spectrum from investment grade credit to private equity. For more than three decades, our investing expertise across our fully integrated platform has served the financial return needs of our clients and provided businesses with innovative capital solutions for growth. Through Athene, our retirement services business, we specialize in helping clients achieve financial security by providing a suite of retirement savings products and acting as a solutions provider to institutions. Our patient, creative and knowledgeable approach to investing aligns our clients, businesses we invest in, our employees and the communities we impact to expand opportunity and achieve positive outcomes. As of June 30, 2025, Apollo had approximately $840 billion of assets under management. To learn more, please visit
+
+www.apollo.com
+
+.
+
+About American Securities
+
+Based in New York with an office in Shanghai, American Securities is a leading U.S. private equity firm that invests in market-leading North American companies with annual revenues generally ranging from $200 million to $2 billion. American Securities and its affiliates have approximately $23 billion in assets under management. For more information, visit
+
+www.american-securities.com
+
+.
+
+Contacts
+
+Apollo
+
+Noah Gunn
+
+Global Head of Investor Relations
+
+Apollo Global Management, Inc.
+
+(212) 822-0540
+
+IR@apollo.com
+
+Joanna Rose
+
+Global Head of Corporate Communications
+
+Apollo Global Management, Inc.
+
+(212) 822-0491
+
+Communications@apollo.com
+
+Trace3
+
+Jill Simpson
+
+Manager, Public Relations
+
+(269) 930-0912
+
+Jill.simpson@trace3.com
+
+American Securities
+
+Joshua Rosen / Nick Kyriacou
+
+Prosek Partners
+
+pro-americansecurities@prosek.com",https://www.trace3.com/,7,"ats_requisitions,first_party_practice,general_web"
+slalom.com,"# Multi-Source Evidence Dossier: slalom.com
+
+=== SECTION: FIRST_PARTY_PRACTICE (URI: https://www.slalom.com/us/en) ===
+From AI strategy to implementation solutions, Slalom helps businesses unlock the full potential of AI—driving innovation, efficiency, and measurable results.
+
+Key findings from Slalom’s AI Research Report
+
+Turn AI ambition into execution
+
+Siemens activates AI for 30,000 software developers
+
+Every day we bring our heads and our hearts to being a trusted copilot, respectful challenger, and unwavering champion for each of our customers.
+
+End-to-end
+
+services
+
+From strategy to digital product building and beyond, we bring the right mix of services to accelerate your vision with holistic, practical solutions. We listen deeply and share our knowledge every step of the way, empowering your teams to continue the momentum after we’re gone.
+
+Industry
+
+know-how
+
+We have rich experience and proven results in your industry. We also share insights across industries to help you uncover new opportunities to adapt and disrupt.
+
+Exponential
+
+impact
+
+Together with over 700 leading and emerging technology partners, we innovate and co-create to deliver the best ideas and solutions for you.
+
+=== SECTION: ATS_REQUISITIONS (URI: https://jobs.ashbyhq.com/slalom) ===
+Jobs
+
+=== SECTION: COMMUNITY_AND_SOCIAL (URI: https://news.ycombinator.com/item?id=18600785) ===
+Slalom Build - Cloud + DevOps Engineers, Architects, Leaders - Chicago + Boston - NOT a remote opportunity
+
+https://www.slalombuild.com/
+
+Product engineering arm of Slalom Consulting - known for innovative work and awesome culture. Strong partnerships with both AWS and GCP. Also hiring in many other areas- data & analytics, engineering, quality engineering, etc.
+
+Please contact me @ katie.keller@slalom.com for more information.
+
+=== SECTION: FIRST_PARTY_CASE_STUDY (URI: https://www.slalom.com/us/en/customer-stories) ===
+Every day we partner with our customers to create powerful experiences, drive innovative ways of working, and bring new products and services to life.
+
+Together we make a tangible impact on people’s lives. Our stories celebrate that impact and inspire us to keep raising the bar. How can we help you?
+
+=== SECTION: FIRST_PARTY_CASE_STUDY (URI: https://www.featuredcustomers.com/vendor/slalom/case-studies) ===
+We use cookies and similar technologies to improve your experience, analyze site traffic,
+            and support our business operations.
+
+Cookie Policy
+
+·
+
+Privacy
+
+✓ Global Privacy Control signal honored
+
+=== SECTION: FIRST_PARTY_CASE_STUDY (URI: https://www.casestudies.com/customer/slalom) ===
+We use cookies and similar technologies to improve your experience, analyze site traffic,
+            and support our business operations.
+
+Cookie Policy
+
+·
+
+Privacy
+
+✓ Global Privacy Control signal honored
+
+=== SECTION: GENERAL_WEB (URI: https://www.slalombuild.com/outcomes) ===
+Client Success
+
+In a rapidly evolving business landscape, our clients have consistently thrived. They’re turning challenges into opportunities and fueling exponential growth to redefine their industries.
+
+Their success stories could be yours too. Join us for a free strategic outcomes workshop to get started.
+
+=== SECTION: FIRST_PARTY_PRACTICE (URI: https://go.slalom.com/tableauindustrysolutions) ===
+Break down the barriers to value
+
+At Slalom, experience meets empathy. We’ll help you make the most of the Tableau platform in order to transform how your teams think about, interact with, and learn from data—so that the people you serve get what they need, faster. We don’t believe in one-size-fits-all solutions. We start by listening, to understand your unique challenges and pressures. And we’re personally invested in your success.
+
+Driving impact at scale requires an approach that goes beyond implementation and plans for people, process, platform, and insights.
+
+Keep scrolling
+
+to read about our Tableau industry solutions
+
+and how we are making a difference with data.
+
+Fill out the form to get connected with someone from our team.
+
+Disclaimer: Slalom is a
+
+partner
+
+of Tableau.
+
+Check out the solutions
+
+Demystify Reopening with Machine Learning
+
+Industry: Retail
+
+Although the COVID-19 pandemic is certainly novel, we have the key data to create models that give you the power to predict what the future of your business will look like based on the decisions you make.
+
+Our Retail Reopening Solution, which we've delivered for global luxury retailers, combines the power of cloud-agnostic AI-Driven predictive models, visualizations in Tableau, and our global experience with top retailers. We enable your business to determine when and where to open your retail locations.
+
+Read the blog
+
+|
+
+Download the one-pager
+
+|
+
+Check out the viz
+
+Mitigate Credit Risk and Find Opportunity
+
+Industry: Financial Services
+
+COVID-19 has resulted in a rapidly changing credit market. Although policies have been adjusted to accommodate borrowers economically impacted, existing risk models lack the flexibility or granularity to adapt to the crisis, which prevents teams from identifying crucial trends and insights.
+
+Our expertise allows us to build a suite of real-time reports and enable risk management on the fly, providing your firm's ability to shift strategy and anticipate the economic impact of the pandemic as it unfolds.
+
+Read the blog
+
+|
+
+Watch the webinar
+
+|
+
+Check out the viz
+
+Demystify Reopening with Machine Learning
+
+Industry: Retail
+
+Although the COVID-19 pandemic is certainly novel, we have the key data to create models that give you the power to predict what the future of your business will look like based on the decisions you make.
+
+Our Retail Reopening Solution, which we've delivered for global luxury retailers, combines the power of cloud-agnostic AI-Driven predictive models, visualizations in Tableau, and our global experience with top retailers. We enable your business to determine when and where to open your retail locations.
+
+Read the blog
+
+|
+
+Download the one-pager
+
+|
+
+Check out the viz
+
+Mitigate Credit Risk and Find Opportunity
+
+Industry: Financial Services
+
+COVID-19 has resulted in a rapidly changing credit market. Although policies have been adjusted to accommodate borrowers economically impacted, existing risk models lack the flexibility or granularity to adapt to the crisis, which prevents teams from identifying crucial trends and insights.
+
+Our expertise allows us to build a suite of real-time reports and enable risk management on the fly, providing your firm's ability to shift strategy and anticipate the economic impact of the pandemic as it unfolds.
+
+Read the blog
+
+|
+
+Watch the webinar
+
+|
+
+Check out the viz
+
+Shining a Light on Recovery and Reopening
+
+Industry: Public Sector
+
+Many cities have started collective data to drive the difficult challenge of determining the safest path to recovery from the COVID-19 pandemic. Numerous factors contribute to a safe recovery, and understanding what metrics are important is crucial for a successful reopening.
+
+Our Recovery and Reopening Solution, which we've delivered to the third-largest city in North America, provides easy to navigate and richly informative visualizations of key data and health and wellness statistics.
+
+Read the case study
+
+|
+
+Check out the viz
+
+|
+
+See it in action
+
+Evolving a Vision Towards Greater Gender Equity
+
+Industry: Public Sector
+
+According to the World Economic Forum, it will take more than 108 years to close the global gender gap. Data acts as a critical factor for measuring change, and helps fuel a vision toward more significant gender equity.
+
+Our Gender Equity Toolkit Solution, which successfully rolled out to the U.S.'s second-largest city, outlines the data-driven methodology, tactics, and tools necessary to build a framework for Gender Equity. We help you align with the evolving Gender Equity vision and establish metrics and methods for measuring progress through interactive visualizations.
+
+Read the case study
+
+|
+
+Check out the viz
+
+|
+
+Download the toolkit
+
+Enabling Police Transparency through Data
+
+Industry: Public Sector
+
+Policing policies and behaviors are making headlines. While policing agencies collect and store relevant data sets that could help drive insights and identify trends, analytics capabilities are usually not available.
+
+Our Police Department Transparency Solutions consist of deep-dive discovery, dashboard design, and implementation. These solutions help law enforcement agencies visualize answers to questions ranging from implicit bias and racial disparity to evaluating strategy, policy, and individual performance.
+
+Read the blog
+
+| Check out the vizzes:
+
+San Francisco
+
+|
+
+Chandler
+
+|
+
+Phoenix
+
+Revolutionizing Global Insurance Data
+
+Industry: Insurance
+
+The insurance industry is in a unique position to take the data driven revolution by storm. Large and medium sized insurers and re-insurers are challenged with integrating data from various business units and providing a single source of business-driven metrics for senior executives.
+
+Our solution provides a one stop shop for executives to gain quick insights on their key data and analytics initiatives. Each metric contains a full featured secondary dashboard enabling users to see detailed activity down to the individual claim and claim holder.
+
+Check out the viz
+
+=== SECTION: FIRST_PARTY_CASE_STUDY (URI: https://www.slalom.com/us/en/customer-stories/aeg-increased-growth-and-scalability) ===
+The hottest ticket in town
+
+Upskilling and hiring for future growth
+
+With over 100 venues and 25+ music festivals, AEG Presents is one of the world’s largest live music presenters. By partnering with Slalom, the company modernized its tour scheduling platform while simultaneously scaling its engineering team.
+
+Our collaboration has helped AEG Presents learn how to successfully deliver digital products from conception through to deployment, positioning the company for continued growth.
+
+Sports & live entertainment
+
+Global touring has evolved into bigger, more complex tours, and time was taking its toll on the legacy platform. It was outdated, slow, and error-prone, and it didn’t allow for real-time, precise data analysis or transparency. Users were entering their data in multiple locations, losing time duplicating their work between Excel or SharePoint on their desktops and the company’s platform. Modernizing Elvis became necessary to streamline the company’s business and level up its operational efficiency.
+
+Modernizing Elvis allowed AEG Presents and Slalom to work closely together, giving their team a taste of our unique culture and passion for co-creation. Throughout our collaboration, AEG Presents’ team learned best practices for research, product definition, and user testing. Our partnership helped the company learn our unique ways of working when developing, iterating, releasing, and testing software. With Slalom’s support, AEG Presents has established its in-house product engineering capability.
+
+Slalom also helped AEG Presents hire high-quality technologists through our Recruiting as a Service (RaaS) offering, Slalom Flex. New employees work side-by-side with Slalom’s experts, learning our ways of working and methodologies, and then become members of AEG Presents’ technology team. Offloading recruiting, interviewing, hiring, and onboarding allows AEG Presents to focus on what it does best while its talent pipeline is filled, technology solutions are built, and the company’s tech team is enabled to run efficiently and independently.
+
+The reinvented platform helps AEG Presents obtain real-time accurate data for ongoing tours and events. It better responds to user needs with a more streamlined experience that makes their lives easier. The company is fully empowered to achieve strategic, longer-term objectives and drive its business forward with a platform that scales with users’ ideas and current and future business needs. Key results include:
+
+Adoption of the new tool is strong. As of June 2024, four months after launch, AEG has:
+
+AEG Presents is committed to continuous innovation by investing in cutting-edge technologies to improve the lives of everybody across the company. Elvis is maintaining his reign at the top of the charts and rocking out with new features, integrations, and automations. We’re dedicated to helping AEG Presents support and evolve its modernized platform and hire the best technical talent to achieve outstanding and enduring results independently for years to come.
+
+=== SECTION: FIRST_PARTY_PRACTICE (URI: https://go.slalom.com/partnerships) ===
+Shared vision. Shared commitment: Partnering to bring innovation to government
+
+At Slalom, we believe in the power of partnership. Our approach is built on understanding your unique vision and goals, and working collaboratively to achieve them. We don't just deliver solutions; we build lasting relationships based on trust, empathy, and mutual success. Our team is dedicated to being your trusted co-pilot, respectful challenger, and unwavering champion, ensuring that every engagement leaves your organization stronger and more capable. With our deep industry expertise, values-driven culture, and commitment to your long-term success, we bring more to every partnership.",https://www.slalom.com/us/en,10,"ats_requisitions,community_and_social,first_party_case_study,first_party_practice,general_web"
+excella.com,"# Multi-Source Evidence Dossier: excella.com
+
+=== SECTION: ATS_REQUISITIONS (URI: https://jobs.ashbyhq.com/excella) ===
+Jobs
+
+=== SECTION: COMMUNITY_AND_SOCIAL (URI: https://news.ycombinator.com/item?id=15386566) ===
+Excella | Arlington, VA & Washington, D.C. | Full-time, ONSITE |
+
+https://www.excella.com/
+
+We're a small-mid sized consulting company (~200 people) with a small company feel. Founders really invest in personal development, have weekly if not monthly happy hours, summer and winter weekend getaways, and the ability to WFH when necessary. Also, the projects are pretty engaging and there's hardly a dull moment. I'm on a small team working to revamp the entire US Immigration portal - high visibility, and direct impact on millions of lives. The White House has estimated that we'll make a 'direct impact on at least a million lives this year alone. If you don't like were immigration is going in this country, here's your chance to be on the front lines working to solve immigration issues.
+
+We are hiring for a wide range of positions in software development. Looking mainly for Ruby, Rails, JavaScript, React/Redux, Python, .NET, and mobile engineers for a variety of experience levels. However, we have more demand for experienced engineers than junior engineers. Also always looking for DevOps personnel. Please reach out to me or someone in HR if this interests you. My email is glenn[dot]espinosa[at]excella[dot]com.
+
+=== SECTION: COMMUNITY_AND_SOCIAL (URI: https://news.ycombinator.com/item?id=13546339) ===
+Excella | Arlington, VA & Washington, D.C. | Full-time, ONSITE |
+
+https://www.excella.com/
+
+We're a small-mid sized consulting company (~200 people) with a small company feel. Founders really invest in personal development, have weekly if not monthly happy hours, summer and winter weekend getaways, and the ability to WFH when necessary. Also, the projects are pretty engaging and there's hardly a dull moment. I'm on a small team working to revamp the entire US Immigration portal - high visibility, and direct impact on millions of lives. The White House has estimated that we'll make a 'direct impact on at least a million lives this year alone. If you don't like were immigration is going in this country, here's your chance to be on the front lines working to solve immigration issues.
+
+We are hiring for a wide range of positions in software development. Looking mainly for Ruby, Rails, JavaScript, React/Redux, Python, .NET, and mobile engineers for a variety of experience levels. However, we have more demand for experienced engineers than junior engineers. Also always looking for DevOps personnel. Please reach out to me or someone in HR if this interests you. My email is glenn[dot]espinosa[at]excella[dot]com.
+
+=== SECTION: COMMUNITY_AND_SOCIAL (URI: https://news.ycombinator.com/item?id=12406112) ===
+Excella Consulting | Arlington, VA & Washington, D.C. | Full-time, ONSITE |
+
+https://www.excella.com/
+
+We're a small-mid sized consulting company (~180 people) with a small company feel. Founders really invest in personal development, have weekly if not monthly happy hours, summer and winter weekend getaways, and the ability to WFH when necessary. Also, the projects are pretty engaging and theres hardly a dull moment. I'm on a small team working to revamp the entire US Immigration portal - high visibility, and direct impact on millions of lives. The White House has estimated that we'll make a 'direct impact on at least a million lives this year' alone.
+
+We are hiring for a wide range of positions in software development. Looking for Ruby, Java, Python, .NET, mobile, and NodeJS engineers for a variety of experience levels. However, we have more demand for experienced engineers than junior engineers. Please reach out to me or someone in HR if this interests you. My email is glenn[dot]espinosa[at]excella[dot]com.
+
+=== SECTION: COMMUNITY_AND_SOCIAL (URI: https://news.ycombinator.com/item?id=12206162) ===
+Excella Consulting | Arlington, VA & Washington, D.C. | Full-time, ONSITE |
+
+https://www.excella.com/
+
+We're a small-mid sized consulting company (~180 people) with a small company feel. Founders really invest in personal development, have weekly if not monthly happy hours, summer and winter weekend getaways, and the ability to WFH when necessary. Also, the projects are pretty engaging and theres hardly a dull moment. I'm on a small team working to revamp the entire US Immigration portal - high visibility, and direct impact on millions of lives. The White House has estimated that we'll make a 'direct impact on at least a million lives this year' alone.
+
+We are hiring for a wide range of positions in software development. Looking for Ruby, Java, Python, .NET, mobile, and NodeJS engineers for a variety of experience levels. However, we have more demand for experienced engineers than junior engineers. Please reach out to me or someone in HR if this interests you. My email is glenn[dot]espinosa[at]excella[dot]com.
+
+=== SECTION: COMMUNITY_AND_SOCIAL (URI: https://news.ycombinator.com/item?id=12018216) ===
+Excella Consulting | Arlington, VA & Washington, D.C. | Full-time, ONSITE |
+
+https://www.excella.com/
+
+We are hiring for a wide range of positions in software development. Looking for Ruby, Java, Python, .NET, and NodeJS engineers for a variety of experience levels. However, we have more demand for experienced engineers than junior engineers. Please reach out to me or someone in HR if this interests you. My email is evan[dot]botello[at]excella[dot]com.
+
+=== SECTION: COMMUNITY_AND_SOCIAL (URI: https://news.ycombinator.com/item?id=11815313) ===
+Excella Consulting - Arlington, VA
+
+https://www.excella.com/
+
+We are hiring for a wide range of positions in software development. Looking for Ruby, Java, Python, .NET, and NodeJS engineers for a variety of experience levels. However, we have more demand for experienced engineers than junior engineers. Please reach out to me or someone in HR if this interests you. My email is evan[dot]botello[at]excella[dot]com.
+
+=== SECTION: FIRST_PARTY_PRACTICE (URI: https://www.excella.com) ===
+Solve for Today.
+
+Evolve for Tomorrow.
+
+We don’t follow paths, we forge them. We challenge what’s expected to deliver what matters—driving powerful results and lasting efficiency.
+
+What we do
+
+Using Technology to Reduce Fraud in Federal Programs
+
+Excella Co-Founder and Chief Technology and Innovation Officer,
+
+Jeff Gallimore
+
+, joins host
+
+John Gilroy of Federal Tech Podcast
+
+to examine how fraud affects federal missions across the government. Tune in as they discuss how agencies can use emerging, but proven technology to reduce fraud in federal programs.
+
+Listen Now
+
+Inside the Push to Build Smarter Digital Solutions Across Federal Agencies
+
+Artificial intelligence (AI) is transforming the way federal agencies approach innovation. Agencies and their partners now have the power to quickly create prototypes and interactive demos to validate new ideas early and cost effectively. Tune in to learn more about rapid prototyping and how it fits into the world of federal compliance while also helping agencies save money.
+
+Listen Now
+
+Measuring What Matters: Evaluating Success in Complex Federal Software Projects
+
+Host John Gilroy of Federal Tech Podcast hosts Chief Technology and Innovation Officer, Jeff Gallimore, to discuss methods for measuring and improving effectiveness and efficiency in federal IT systems using a DORA (DevOps Research and Development Assessment) framework.
+
+Listen Now
+
+Using AI to Combat Fraud, Waste, and Abuse
+
+The U.S. Department of Health and Human Services (HHS) is the largest grant-making organization in the federal government with a mission to protect the health of all Americans and to provide essential human services. HHS Office of Inspector General (OIG) provides objective oversight for HHS’s over $1 trillion portfolio. Learn how HHS OIG partnered with Excella to develop Contracts and Grants Analytics Portal (CGAP), an advanced analytics tool that leverages artificial intelligence (AI) to combat fraud, waste, and abuse.
+
+Read More
+
+Is Agile for AI Possible? Yes.
+
+Many people think that Agile approaches don’t work for AI efforts; that there is a fundamental mismatch between Agile practices and the work required for advanced analytics, Machine Learning, and AI development. This could not be further from the truth. Agile approaches are specifically intended for complex problems with high uncertainty and a need for emergent learning and validation—key characteristics of AI efforts.
+
+Read More
+
+What We Do
+
+You have bold ideas – we make sure you have the teams and technology to make them a reality.
+
+Technology keeps evolving and so do we. Our exceptional teams are driven to help federal agencies, brands, and nonprofits challenge the status quo and meet rapidly changing demands. We take a collaborative approach, delivering high-performing technology solutions that help you rise to today’s challenges and power your mission into tomorrow.
+
+Innovate with Us
+
+Work at Excella
+
+We believe in the people who power technology – problem solvers, collaborators, and thought leaders.
+
+Our unique team of passionate and analytics thinkers make us better at solving unthinkable problems and making technology work for our clients. Join our team of experts and work with a company that gives you the space to learn and grow in your field while helping our clients realize their future.
+
+Work With Us
+
+=== SECTION: FIRST_PARTY_PRACTICE (URI: https://www.excella.com/) ===
+Solve for Today.
+
+Evolve for Tomorrow.
+
+We don’t follow paths, we forge them. We challenge what’s expected to deliver what matters—driving powerful results and lasting efficiency.
+
+What we do
+
+Using Technology to Reduce Fraud in Federal Programs
+
+Excella Co-Founder and Chief Technology and Innovation Officer,
+
+Jeff Gallimore
+
+, joins host
+
+John Gilroy of Federal Tech Podcast
+
+to examine how fraud affects federal missions across the government. Tune in as they discuss how agencies can use emerging, but proven technology to reduce fraud in federal programs.
+
+Listen Now
+
+Inside the Push to Build Smarter Digital Solutions Across Federal Agencies
+
+Artificial intelligence (AI) is transforming the way federal agencies approach innovation. Agencies and their partners now have the power to quickly create prototypes and interactive demos to validate new ideas early and cost effectively. Tune in to learn more about rapid prototyping and how it fits into the world of federal compliance while also helping agencies save money.
+
+Listen Now
+
+Measuring What Matters: Evaluating Success in Complex Federal Software Projects
+
+Host John Gilroy of Federal Tech Podcast hosts Chief Technology and Innovation Officer, Jeff Gallimore, to discuss methods for measuring and improving effectiveness and efficiency in federal IT systems using a DORA (DevOps Research and Development Assessment) framework.
+
+Listen Now
+
+Using AI to Combat Fraud, Waste, and Abuse
+
+The U.S. Department of Health and Human Services (HHS) is the largest grant-making organization in the federal government with a mission to protect the health of all Americans and to provide essential human services. HHS Office of Inspector General (OIG) provides objective oversight for HHS’s over $1 trillion portfolio. Learn how HHS OIG partnered with Excella to develop Contracts and Grants Analytics Portal (CGAP), an advanced analytics tool that leverages artificial intelligence (AI) to combat fraud, waste, and abuse.
+
+Read More
+
+Is Agile for AI Possible? Yes.
+
+Many people think that Agile approaches don’t work for AI efforts; that there is a fundamental mismatch between Agile practices and the work required for advanced analytics, Machine Learning, and AI development. This could not be further from the truth. Agile approaches are specifically intended for complex problems with high uncertainty and a need for emergent learning and validation—key characteristics of AI efforts.
+
+Read More
+
+What We Do
+
+You have bold ideas – we make sure you have the teams and technology to make them a reality.
+
+Technology keeps evolving and so do we. Our exceptional teams are driven to help federal agencies, brands, and nonprofits challenge the status quo and meet rapidly changing demands. We take a collaborative approach, delivering high-performing technology solutions that help you rise to today’s challenges and power your mission into tomorrow.
+
+Innovate with Us
+
+Work at Excella
+
+We believe in the people who power technology – problem solvers, collaborators, and thought leaders.
+
+Our unique team of passionate and analytics thinkers make us better at solving unthinkable problems and making technology work for our clients. Join our team of experts and work with a company that gives you the space to learn and grow in your field while helping our clients realize their future.
+
+Work With Us
+
+=== SECTION: FIRST_PARTY_PRACTICE (URI: https://www.excella.com/about-excella) ===
+About
+
+Excella is a transformative technology firm that helps organizations unlock new possibilities
+
+.
+
+We’re driven by our clients’ missions and believe in co-creating results that last.
+
+Our exceptional teams partner to question the status quo and tackle our clients’ most critical problems, clearing the way for mission success. With our collaborative approach, we deliver high-performing solutions that help our clients rise to today’s challenges and power their mission into tomorrow.
+
+Excella was founded in 2002 to empower organizations to realize their future through technology. Today, we meet our clients wherever they are and work with them to deliver mission efficiency and results that last.
+
+News
+
+We believe in creating results that last. That’s why we work collaboratively to solve our clients’ and communities’ most critical problems. Visit our newsroom to see how we’re making impact through the power of high-performing technology.
+
+Read More
+
+Events
+
+We believe in the power of technology – and learning. That’s why we take every opportunity to learn new tools, share industry insights and explore cutting-edge techniques with our clients, colleagues and neighbors here in DC.
+
+Join Us at Our Next Event!
+
+Community Work
+
+Our community investment program was built on the same philosophy that drives our business: put passionate people to work, build strong relationships, and deliver results.
+
+We partner with Homestretch, Inc. in Fairfax to help homeless families obtain self-sufficiency, stability and permanent affordable housing. By focusing on a single cause, we maximize our contribution to Homestretch while helping Excellians find compelling ways to give back.
+
+Learn More
+
+Strategic Partner
+
+Excella has partnered with Attain Capital to advance our focus on delivering differentiated technology solutions in support of critical client missions.
+
+Led by technologists and business leaders, Attain Capital helps portfolio companies strengthen management teams, define and accelerate expansion plans, and improve operations, fostering industry-leading companies that deliver unique solutions to support critical missions.
+
+Learn More
+
+=== SECTION: FIRST_PARTY_PRACTICE (URI: http://websites.milonic.com/excella.com) ===
+Excella. Solve for today, evolve for tomorrow. Agile consulting and training, IT modernization, enhanced analytics, and digital service...
+
+=== SECTION: GENERAL_WEB (URI: https://www.forbes.com/companies/excella/) ===
+From Excella
+
+Excella is an Agile technology firm helping leading organizations realize their future through the power of technology. Since 2002, federal agencies, prominent brands and trailblazing non-profits have turned to Excella to transform bold ideas into elegant technology solutions. We believe technology exists to solve challenges and evolve thinking—we help organizations harness this power to make real progress.  Learn more at
+
+www.excella.com
+
+=== SECTION: FIRST_PARTY_PRACTICE (URI: https://www.excella.com/news/excella-caps-year-of-major-growth-with-new-minority-investment-partner) ===
+Arlington, VA and McLean, VA, May 14, 2024 –
+
+Excella, a pioneer in Agile technology solutions, today announced that the company has secured a minority investment from Attain Capital to advance its focus on delivering differentiated technology solutions in support of critical client missions. This partnership comes after Excella continued its record of strong growth in 2023, while becoming well-positioned to expand its capabilities and presence across federal and commercial markets.
+
+Recently, Excella has doubled down on its efforts to deliver meaningful solutions to clients, which resulted in record growth for the company in 2023 of over 30% increase in revenue. As the technology landscape continues to evolve, Excella has strengthened its differentiation in the market and its capture approach to achieve an 82% win rate across the public and private sectors. Excella has gained recognition from industry peers as a result. Just last week, Washington Executive honored Excella CEO and co-founder Burton White with a 2024 Chief Officer Award for his commitment to innovation and continued growth.
+
+The investment from Attain Capital is anticipated to bring a blend of expertise, resources, and relationships to help take Excella to the next level and drive long-term value. The firm primarily invests in companies delivering differentiated technology-enabled solutions and services to government and education clients, making it an ideal partner for Excella. Led by technologists and business leaders, Attain Capital helps portfolio companies strengthen management teams, define and accelerate expansion plans, and improve operations, fostering industry-leading companies that deliver unique solutions to support critical missions.
+
+“This investment is a big win for Excella and strengthens our position to execute our strategy,” said Excella CEO and co-founder Burton White. “Attain Capital’s approach closely aligns with Excella’s values and vision, and their team has significant tech industry expertise that can help us expand Excella’s capabilities in areas like Generative AI. This partnership will drive growth for Excella to create even more opportunities for Excellians’ career advancement and even more expertise to solve clients’ critical problems.”
+
+“Burton and the Excella team have built a company with values that strongly resonate with Attain Capital,” said Ted Davies, Managing Partner, Attain Capital. “Our investment in Excella reflects our confidence in their exceptional high-touch service delivery approach and impressive momentum in the market. We believe there is a significant opportunity to scale Excella’s approach that delivers outsized results to their clients in the public and private sectors, while also continuing to invest in the amazing people of Excella. We are thrilled to partner with the Excella team to accelerate their growth and deepen their expertise as they compete against the large IT consultancies.”
+
+Holland & Knight LLP and Cooley LLP acted as legal counsel to Excella and Attain Capital respectively.
+
+About Excella
+
+Excella is an Agile technology firm and transformative partner to leading organizations. Since 2002, federal agencies, prominent brands, and trailblazing non-profits have turned to Excella to transform bold ideas into elegant technology solutions. We believe technology exists to solve challenges and evolve thinking – we help organizations harness this power to make real progress. Learn more at
+
+www.excella.com
+
+.
+
+About Attain Capital
+
+Based in McLean, Va., Attain Capital is a private equity firm that makes control and select minority investments in firms delivering high-value, technology-enabled solutions and services to government and education clients. We drive value through active ownership focused on building management teams, defining business strategies, executing growth plans, and improving operations fostering industry-leading companies that have unique solutions to pervasive challenges. For more information, please visit
+
+attain.capital
+
+.
+
+Media Contacts:
+
+Robin Bectel, REQ for Excella
+
+[email protected]
+
+Ellen Walsh, Attain Capital
+
+703.857.2178 |
+
+[email protected]
+
+Share on Social
+
+Share on Twitter
+
+Share on Facebook
+
+Share on LinkedIn
+
+Share via email
+
+=== SECTION: GENERAL_WEB (URI: https://orangeslices.ai/excella-announces-it-has-secured-a-minority-investment-from-attain-capital/) ===
+Excella, a pioneer in Agile technology solutions, today announced that the company has secured a minority investment from Attain Capital to advance its focus on delivering differentiated technology solutions in support of critical client missions. This partnership comes after Excella continued its record of strong growth in 2023, while becoming well-positioned to expand its capabilities and presence across federal and commercial markets.
+
+Recently, Excella has doubled down on its efforts to deliver meaningful solutions to clients, which resulted in record growth for the company in 2023 of over 30% increase in revenue. As the technology landscape continues to evolve, Excella has strengthened its differentiation in the market and its capture approach to achieve an 82% win rate across the public and private sectors. Excella has gained recognition from industry peers as a result. Just last week, Washington Executive honored Excella CEO and co-founder Burton White with a 2024 Chief Officer Award for his commitment to innovation and continued growth.
+
+The investment from Attain Capital is anticipated to bring a blend of expertise, resources, and relationships to help take Excella to the next level and drive long-term value. The firm primarily invests in companies delivering differentiated technology-enabled solutions and services to government and education clients, making it an ideal partner for Excella. Led by technologists and business leaders, Attain Capital helps portfolio companies strengthen management teams, define and accelerate expansion plans, and improve operations, fostering industry-leading companies that deliver unique solutions to support critical missions.
+
+“This investment is a big win for Excella and strengthens our position to execute our strategy,” said Excella CEO and co-founder Burton White. “Attain Capital’s approach closely aligns with Excella’s values and vision, and their team has significant tech industry expertise that can help us expand Excella’s capabilities in areas like Generative AI. This partnership will drive growth for Excella to create even more opportunities for Excellians’ career advancement and even more expertise to solve clients’ critical problems.”
+
+“Burton and the Excella team have built a company with values that strongly resonate with Attain Capital,” said Ted Davies, Managing Partner, Attain Capital. “Our investment in Excella reflects our confidence in their exceptional high-touch service delivery approach and impressive momentum in the market. We believe there is a significant opportunity to scale Excella’s approach that delivers outsized results to their clients in the public and private sectors, while also continuing to invest in the amazing people of Excella. We are thrilled to partner with the Excella team to accelerate their growth and deepen their expertise as they compete against the large IT consultancies.”
+
+Holland & Knight LLP and Cooley LLP acted as legal counsel to Excella and Attain Capital respectively.
+
+About Excella
+
+Excella is an Agile technology firm and transformative partner to leading organizations. Since 2002, federal agencies, prominent brands, and trailblazing non-profits have turned to Excella to transform bold ideas into elegant technology solutions. We believe technology exists to solve challenges and evolve thinking – we help organizations harness this power to make real progress. Learn more at www.excella.com.
+
+About Attain Capital
+
+Based in McLean, Va., Attain Capital is a private equity firm that makes control and select minority investments in firms delivering high-value, technology-enabled solutions and services to government and education clients. We drive value through active ownership focused on building management teams, defining business strategies, executing growth plans, and improving operations fostering industry-leading companies that have unique solutions to pervasive challenges. For more information, please visit attain.capital.
+
+The only Public Benefit Corporation built specifically to serve the GovCon market.
+
+Learn more about OrangeSlices
+
+PBC
+
+Not Yet an OrangeSlices Insider? Learn more about the
+
+OS PBC Insider Corporate and Individual Plans
+
+here
+
+. Plans start at $295 annually.",https://jobs.ashbyhq.com/excella,14,"ats_requisitions,community_and_social,first_party_practice,general_web"
+thoughtworks.com,"# Multi-Source Evidence Dossier: thoughtworks.com
+
+=== SECTION: FIRST_PARTY_PRACTICE (URI: https://www.thoughtworks.com/) ===
+Meet Thoughtworks'
+
+Agentic Development Platform
+
+AI/works™ packs decades of engineering IP into a platform that changes the economics of building and modernizing industrial-grade systems. With our technologists steering AI/works™, you get higher quality systems, delivered at radically lower cost with enterprise-grade governance and control. Faster than you can say “algorithmic bias"".
+
+Leaders want
+
+AI to work
+
+by ‘next Tuesday’
+
+But there are three foundations you need in place first. This is where Thoughtworks comes in. Rebuild. Rewire. Reimagine. Thoughtworks transformation pathways for the AI era.
+
+AI that works
+
+in action
+
+Our clients get to focus on improving commercial results, rather than having their stack run rings around them.
+
+Partner ecosystems
+
+built on engineering foundations
+
+We work with leading cloud, data and compute APIs, including AWS, Google Cloud, Microsoft Azure, Databricks and Snowflake. Through a collaboration with Mechanical Orchard, we support deep mainframe renewal.
+
+=== SECTION: FIRST_PARTY_PRACTICE (URI: https://www.thoughtworks.com/careers/jobs) ===
+Important note on recruitment fraud
+
+There has been a rise in job scams involving fraudulent postings and communications that closely mimic Thoughtworks branding, including near-identical versions of our name and logo. Please remain vigilant and cautious of such attempts.
+
+Thoughtworks will never ask candidates for payment, bank details or account information during the hiring process. We also do not communicate with candidates via messaging platforms such as Telegram, Signal or WhatsApp. All official communication will come from a
+
+thoughtworks.com
+
+email address or our verified recruitment platforms.
+
+To further protect the integrity of our hiring process, we follow a strict
+
+Policy on Unsolicited Recruitment Agency Submissions
+
+. If you receive suspicious communication claiming to be from Thoughtworks, please reach out to us via our official channels.
+
+=== SECTION: ATS_REQUISITIONS (URI: https://jobs.ashbyhq.com/thoughtworks) ===
+Thoughtworks Jobs
+
+=== SECTION: COMMUNITY_AND_SOCIAL (URI: https://news.ycombinator.com/item?id=13009285) ===
+Micro-frontends have been recently listed in Thoughtworks Technology Radar as
+""a technique to assess""[0]. They describe it as an approach parallel to the
+microservices pattern seen on the backend: a monolith front-end web app is
+broken into many sub-applications, each with a certain level of independence
+from the others so that it can be developed, tested and deployed in isolation.
+These sub-applications share a set of primitives to allow for a cohesive user
+experience.
+
+Spotify desktop client is reported[1][2] to be built with such an approach,
+isolating micro-apps into iframes using libraries and postMessage APIs to
+coordinate. I've personally run into an application built in a similar way,
+where many iframes shared APIs exposed by their parent window.
+
+I was wondering if someone in the HN crowd had experiences / tools / frameworks
+to share to help someone looking into this topic.
+
+Thanks :)
+
+[0] https://www.thoughtworks.com/radar/techniques/micro-frontends
+
+[1] https://www.quora.com/What-is-the-technology-stack-behind-the-Spotify-web-client/answer/Andreas-Blixt
+
+[2] https://www.quora.com/How-is-Javascript-used-within-the-Spotify-desktop-application/answer/Mattias-Petter-Johansson
+
+=== SECTION: COMMUNITY_AND_SOCIAL (URI: https://news.ycombinator.com/item?id=9972363) ===
+My old employer Thoughtworks does this.
+
+http://www.thoughtworks.com/careers/application-process
+
+It's a fantastic way to vet candidates and there are multiple exits to the process. For obviously bad submissions, it's probably a no-hire, but I've even seen incomplete assignments get someone to the next level and then a hire.
+
+Some people get sent to ThoughtWorks University which basically trains them to code, work in an agile environment and how to be a good consultant. Everyone that goes says it is a great experience.
+
+=== SECTION: GENERAL_WEB (URI: https://en.wikipedia.org/wiki/ThoughtWorks_(company)) ===
+History
+
+[
+
+edit
+
+]
+
+1980s–1990s
+
+[
+
+edit
+
+]
+
+In the late 1980s,
+
+Roy Singham
+
+founded Singham Business Services as a management consulting company servicing the equipment leasing industry in a Chicago basement. According to Singham, after two-to-three years, Singham started recruiting additional staff and came up with the name Thoughtworks in 1990.
+
+[
+
+8
+
+]
+
+The company was incorporated under the new name in 1993 and focused on building software applications.
+
+[
+
+9
+
+]
+
+Over time, Thoughtworks' technology shifted from
+
+C++
+
+and
+
+Forte 4GL
+
+in the mid-1990s to include
+
+Java
+
+in the late 1990s.
+
+[
+
+citation needed
+
+]
+
+1990s–2010s
+
+[
+
+edit
+
+]
+
+Martin Fowler
+
+joined the company in 1999 and became its chief scientist in 2000.
+
+[
+
+10
+
+]
+
+In 2001, Thoughtworks agreed to settle a lawsuit by Microsoft for $480,000 for deploying unlicensed copies of office productivity software to employees.
+
+[
+
+11
+
+]
+
+Also in 2001, Fowler,
+
+Jim Highsmith
+
+, and other key software figures authored the
+
+Agile Manifesto
+
+.
+
+[
+
+12
+
+]
+
+The company began using agile techniques while working on a leasing project.
+
+[
+
+13
+
+]
+
+Thoughtworks' technical expertise expanded with the
+
+.NET Framework
+
+in 2002,
+
+[
+
+14
+
+]
+
+C#
+
+in 2004,
+
+Ruby
+
+and the
+
+Rails
+
+platform in 2006.
+
+[
+
+15
+
+]
+
+In 2002, Thoughtworks chief scientist Martin Fowler wrote ""Patterns of Enterprise Application Architecture"" with contributions by ThoughtWorkers David Rice and Matthew Foemmel, as well as outside contributors Edward Hieatt, Robert Mee, and Randy Stafford.
+
+[
+
+16
+
+]
+
+Thoughtworks Studios was launched as its product division in 2006 and shut down in 2020. The division created, supported and sold agile project management and software development and deployment tools including Mingle,
+
+[
+
+17
+
+]
+
+Gauge (formerly Twist)
+
+, Snap CI
+
+[
+
+18
+
+]
+
+and
+
+GoCD
+
+.
+
+[
+
+19
+
+]
+
+On 2 March 2007, Thoughtworks announced Trevor Mather as the new CEO.
+
+[
+
+20
+
+]
+
+Singham became Executive chairman. Also in March 2007, Rebecca Parsons assumed the role of Chief Technical Officer, having been with the company since 1999.
+
+[
+
+21
+
+]
+
+[
+
+22
+
+]
+
+By 2008, Thoughtworks employed 1,000 people and was growing at the rate of 20–30% p.a., with bases around the world. Its clients included
+
+Microsoft
+
+,
+
+Oracle
+
+, major banks, and
+
+The Guardian
+
+newspaper.
+
+[
+
+23
+
+]
+
+Singham owned 97% of the
+
+common stock
+
+of the company.
+
+[
+
+23
+
+]
+
+By 2010, its clients included
+
+Daimler AG
+
+,
+
+Siemens
+
+and
+
+Barclays
+
+, and had opened a second headquarters in
+
+Bangalore
+
+.
+
+[
+
+24
+
+]
+
+In 2010, Singham opened Thoughtworks’ Fifth Agile Software Development Conference in
+
+Beijing
+
+.
+
+[
+
+25
+
+]
+
+2010s–2020s
+
+[
+
+edit
+
+]
+
+In 2010, Jim Highsmith joined Thoughtworks.
+
+[
+
+26
+
+]
+
+In April 2013, Thoughtworks announced a collective leadership structure and appointed four co-Presidents of the global organization.
+
+[
+
+27
+
+]
+
+The appointments followed the announcement that the then current CEO, Trevor Mather, was leaving Thoughtworks to take up the role of CEO for the used car sales business
+
+Trader Media Group
+
+.
+
+[
+
+28
+
+]
+
+In May 2013, David Walton was hired as Director of Global Health.
+
+[
+
+29
+
+]
+
+Walton has done work in
+
+Haiti
+
+since 1999, including helping establish a 300-room, solar-powered hospital and the establishment of a noncommunicable disease clinic.
+
+[
+
+30
+
+]
+
+In 2015, Guo Xiao, who started as a developer in Thoughtworks
+
+China
+
+in 1999, became the chief executive officer and President. Also in 2015, Chinese marketing data company AdMaster acquired Chinese online form automation platform JinShuJu from Thoughtworks.
+
+[
+
+31
+
+]
+
+[
+
+32
+
+]
+
+In early 2016, Thoughtworks closed their
+
+Toronto
+
+offices, the last remaining Canadian office after the closure of their Calgary offices in 2013. They have since reopened the Toronto office.
+
+[
+
+33
+
+]
+
+Singham sold the company to British
+
+private equity
+
+firm
+
+Apax Partners
+
+in 2017 for $785 million, by which time it had 4,500 employees across 15 countries, including
+
+South Africa
+
+.
+
+[
+
+25
+
+]
+
+[
+
+34
+
+]
+
+[
+
+35
+
+]
+
+[
+
+36
+
+]
+
+Singham left the company.
+
+After 2017, several members of Thoughtworks senior staff began to work for the People's Support Foundation, founded by Singham's partner
+
+Jodie Evans
+
+with the support of Chad Wathington, Thoughtworks' chief strategy officer, and Jason Pfetcher, Thoughtworks' former general counsel.
+
+[
+
+25
+
+]
+
+2020s–Present
+
+[
+
+edit
+
+]
+
+Thoughtworks announced that it acquired Gemini Solutions Inc. in January 2021. Gemini is a privately held software development consulting services firm, and it is based in Romania.
+
+[
+
+37
+
+]
+
+At the end of January 2021, Thoughtworks raised $720 million in funding according to data compiled by Chicago Inno.
+
+[
+
+38
+
+]
+
+The following month, Thoughtworks acquired Fourkind, a machine learning and data science consulting company based in Finland.
+
+[
+
+39
+
+]
+
+In March 2021, Thoughtworks worked with the Veterans Affairs Department to deploy a centralized mechanism for delivering updates via 'VANotify'.
+
+[
+
+40
+
+]
+
+On September 15, 2021, Thoughtworks IPO'd on the NASDAQ and is listed as $TWKS.
+
+In April 2022, Thoughtworks acquired Connected, a product development company based in
+
+Canada
+
+.
+
+[
+
+41
+
+]
+
+[
+
+42
+
+]
+
+In May 2024, Guo Xiao stepped down as CEO of Thoughtworks, with the transition becoming official in June 2024.
+
+[
+
+43
+
+]
+
+He is succeeded by Mike Sutcliff.
+
+[
+
+44
+
+]
+
+In November 2024, Thoughtworks was taken private by
+
+Apax Partners
+
+for $4.40 per share.
+
+[
+
+45
+
+]
+
+=== SECTION: FIRST_PARTY_PRACTICE (URI: https://www.thoughtworks.com/about-us/news) ===
+News and stories
+                        Thoughtworks Joins Anthropic’s Claude Network as a Select-Tier Services Partner 
+                            
+                            
+                            
+                        August 19, 2026
+
+=== SECTION: FIRST_PARTY_PRACTICE (URI: https://toot.thoughtworks.com/@thoughtworks) ===
+Thoughtworks (@thoughtworks@toot.thoughtworks.com) - Thoughtworks’ Mastodon instance
+
+=== SECTION: FIRST_PARTY_CASE_STUDY (URI: https://workspace.google.com/customers/thoughtworks/) ===
+I would like to receive newsletters from Google Cloud and Workspace.
+
+أريد تلقّي نشرات إخبارية من Google Cloud وWorkspace
+
+I would like to receive newsletters from Google Cloud and Workspace.
+
+I would like to receive newsletters from Google Cloud and Workspace.
+
+I would like to receive newsletters from Google Cloud and Workspace.
+
+I would like to receive newsletters from Google Cloud and Workspace.
+
+Chci dostávat zpravodaje ze služeb Google Cloud a Workspace
+
+Jeg vil gerne modtage nyhedsbreve fra Google Cloud og Workspace
+
+Ich möchte Newsletter von Google Cloud und Google Workspace erhalten.
+
+I would like to receive newsletters from Google Cloud and Workspace.
+
+I would like to receive newsletters from Google Cloud and Workspace.
+
+I would like to receive newsletters from Google Cloud and Workspace
+
+Quiero recibir boletines informativos de Google Cloud y Workspace
+
+Quiero recibir newsletters de Google Cloud y Workspace
+
+I would like to receive newsletters from Google Cloud and Workspace.
+
+I would like to receive newsletters from Google Cloud and Workspace.
+
+I would like to receive newsletters from Google Cloud and Workspace.
+
+Haluan saada Google Cloudin ja Workspacen uutiskirjeitä
+
+I would like to receive newsletters from Google Cloud and Workspace.
+
+Je souhaite recevoir les newsletters de Google Cloud et Workspace
+
+I would like to receive newsletters from Google Cloud and Workspace.
+
+I would like to receive newsletters from Google Cloud and Workspace.
+
+I would like to receive newsletters from Google Cloud and Workspace.
+
+I would like to receive newsletters from Google Cloud and Workspace.
+
+Szeretnék hírleveleket kapni a Google Cloudtól és a Workspace-től
+
+Saya ingin menerima newsletter dari Google Cloud dan Workspace
+
+I would like to receive newsletters from Google Cloud and Workspace.
+
+Desidero ricevere newsletter da Google Cloud e Workspace
+
+אני רוצה לקבל ניוזלטרים מ-Google Cloud ומ-Workspace
+
+Google Cloud と Workspace のニュースレターの受信を希望する
+
+I would like to receive newsletters from Google Cloud and Workspace.
+
+I would like to receive newsletters from Google Cloud and Workspace.
+
+Google Cloud 및 Workspace의 뉴스레터를 수신합니다.
+
+Google 개인정보처리방침
+
+에 따라 Google Cloud가 아래와 같이 내 개인정보를 수집, 사용 및 보유하는 데 동의합니다.
+
+I agree that Google Cloud will collect, use and retain my personal data as below in accordance with
+
+Google's Privacy Policy
+
+.
+
+If you do not agree with this, you cannot proceed further with this request.
+
+This is required
+
+I would like to receive newsletters from Google Cloud and Workspace.
+
+I would like to receive newsletters from Google Cloud and Workspace.
+
+I would like to receive newsletters from Google Cloud and Workspace.
+
+I would like to receive newsletters from Google Cloud and Workspace.
+
+I would like to receive newsletters from Google Cloud and Workspace.
+
+I would like to receive newsletters from Google Cloud and Workspace.
+
+Ik wil graag nieuwsbrieven van Google Cloud en Workspace ontvangen
+
+Jeg ønsker å motta nyhetsbrev fra Google Cloud og Workspace
+
+Chcę otrzymywać newslettery od Google Cloud i Workspace
+
+Quero receber newsletters do Google Cloud e do Workspace
+
+Quero receber newsletters do Google Cloud e Workspace
+
+I would like to receive newsletters from Google Cloud and Workspace.
+
+Я хочу получать рассылку о Google Cloud и Workspace
+
+I would like to receive newsletters from Google Cloud and Workspace.
+
+I would like to receive newsletters from Google Cloud and Workspace.
+
+I would like to receive newsletters from Google Cloud and Workspace.
+
+Jag vill få nyhetsbrev från Google Cloud och Workspace
+
+I would like to receive newsletters from Google Cloud and Workspace.
+
+I would like to receive newsletters from Google Cloud and Workspace.
+
+I would like to receive newsletters from Google Cloud and Workspace.
+
+ฉันต้องการรับจดหมายข่าวจาก Google Cloud และ Workspace
+
+I would like to receive newsletters from Google Cloud and Workspace.
+
+Google Cloud ve Workspace bültenlerini almak istiyorum
+
+Я хочу отримувати інформаційні листи від Google Cloud і Workspace
+
+I would like to receive newsletters from Google Cloud and Workspace.
+
+Tôi muốn nhận bản tin của Google Cloud và Workspace
+
+我希望收到 Google Cloud 和 Workspace 的最新简报
+
+我想接收 Google Cloud 和 Workspace 的通訊
+
+我想收到 Google Cloud 和 Workspace 電子報
+
+=== SECTION: FIRST_PARTY_PRACTICE (URI: https://www.thoughtworks.com/insights/blog/mastering-digital-transformation-case-study-part-1) ===
+The dispute about software development methods is over. The agile organization is set to establish itself as the
+
+dominant organizational form
+
+. Current literature, specifically that relating to agile software development, impressively demonstrates this, both in empirical research and in theory. (In
+
+Accelerate
+
+[1], Forsgren, Humble, and Kim present strong empirical evidence of the link between agile/DevOps methods and business success. In [2] D. Reinertsen presents the
+
+underlying principles
+
+.) And yet, merely knowing the facts is entirely insufficient when it comes to transforming an organisation to become agile or digital.
+
+In this two-part series, we take a specific customer project (‘One Touch Retail’ - OTR) and demonstrate how we are using agile methods to advance the digital transformation of the automobile manufacturer Mercedes-Benz. We want to encourage you to face the challenges of a digital transformation – because the results are worth it. While there are challenges and obstacles, your organisation will develop desirable new skills and create value. Once you have experienced the new agile way of working, there is no way back.
+
+Overview
+
+Throughout the multi-year transformation at Mercedes-Benz in collaboration with Thoughtworks, we have learned that we need to address several paradigm shifts simultaneously (keywords:
+
+agile software development, DevOps, design thinking
+
+). For this, support from Mercedes-Benz’s management has been paramount. We have redesigned our project structure in many areas and used modern infrastructure and control tools (keywords:
+
+cloud
+
+, lean PMO
+
+). Ultimately, we used this to develop a feedback-focused environment that enables us to respond extremely quickly to new requirements and, in the process, develop a product that users will love.
+
+Our key insights from this transformation project are:
+
+Unlearning
+
+what we have learned so far and fundamentally changing our daily ways of working required a considerable amount of courage from everyone involved.
+
+Start small
+
+. We started with small steps and then scaled up quickly.
+
+Don’t play it, mean it! And be it! For the digital transformation, the focus is on applying the agile principles instead of stubbornly following a specific method.
+
+Using
+
+commodity
+
+infrastructures makes us faster.
+
+Focus on self-organizing, cross-functional product teams.
+
+We achieve greater effectiveness by treating offshore teams as equals.
+
+Paradigm Shift
+
+Digitalization is not simply a technical transformation. It calls for far-reaching paradigm shifts and new ways of thinking in many areas. Moreover, it is not a one-off activity or simply a learning experience, but an ongoing adjustment of deeply rooted thought patterns and day-to-day behavior. We believe that five different paradigm shifts are involved:
+
+From
+
+waterfall methodology
+
+to
+
+agile software development
+
+From
+
+project
+
+to
+
+product
+
+From
+
+development
+
+and
+
+operations
+
+to
+
+DevOps
+
+From
+
+requirements analysis
+
+to
+
+design thinking
+
+From
+
+IT service management
+
+to
+
+a focus on business value
+
+In our opinion, it makes sense to address these individual paradigm shifts simultaneously (even if that seems paradoxical from a change management perspective since it is well known that making too many changes simultaneously in a company can result in a state of “
+
+organization change fatigue
+
+”, see [3].) After all, many of the paradigms on the right-hand side use practices, tools, and architectures that complement and support one another. The foundation of these paradigm shifts is a culture of openness, trust, and sharing (e.g. of responsibility), humility (e.g. a subject matter expert cannot and does not have to know everything), and inclusion.
+
+“One Touch Retail”
+
+The OTR project is a multi-year digital transformation which is part of the Mercedes-Benz
+
+Best Customer Experience Initiative
+
+, see [4]. We have set the goal to develop an innovative and intuitive digital assistant for salespersons to replace the current legacy system. The aim is to make the sales process more effective. At the same time, it will allow salespersons at Mercedes-Benz to focus even more closely on their customers. The new OTR platform will also be flexible to allow it to adapt to the changing requirements of the automobile market.
+
+A global team, distributed across sites in Germany, India, and China, is working on the new sales assistant. The German team is developing the system for the German market while working closely with colleagues in the Indian development centers. At the same time, the Chinese team is developing a
+
+similar assistant
+
+that is tailored to the Chinese market (see [5]).
+
+Changes from the Status Quo
+
+We (the authors together with the joint project team consisting of Mercedes-Benz and Thoughtworks employees) used OTR to implement Mercedes-Benz’s IT strategy in many areas. For instance, we increased the frequency of software releases from one deployment per month to several deployments a day in the production environment, thus realizing a
+
+continuous delivery
+
+process. The IT architecture was converted from an n-tier approach to a microservice architecture, while the infrastructure changed from local installations to one using cloud-based components. The former manual tests have been replaced with fully automated tests, which ultimately enabled a continuous deployment process. Thus, we executed a complete turnaround from a waterfall methodology to agile software development using DevOps methods. Moreover, we now use free and open-source software (FOSS) in place of proprietary solutions. Instead of a clear separation of business and IT functions, we rely on the greatest possible integration in cross-functional product teams.
+
+Revolution at Mercedes-Benz
+
+One of the most important and at the same time most difficult aspects of a digital transformation is establishing a new working culture. Mercedes-Benz is currently undergoing a transformation from an automobile manufacturer to a provider of mobility services. Naturally, this also has concrete effects on our work in the OTR project. Demands for
+
+greater speed, faster learning, and agility
+
+– keyword “
+
+#TwiceAsFast
+
+” ([6] and [7]) – are moving into the spotlight. This is also based on the recognition that the customer benefit in the automobile industry, particularly in the area of Mobility as a Service (MaaS), can be improved decisively through digital products. However, the quality of the products is determined by their ability to adapt to new customer requirements and to learn from customer behavior as well as their speed in doing so.
+
+In this respect, we view modern software technology as a driver of innovation, placing a focus on technology that accelerates the development process and shortens feedback cycles. It is precisely this capability that forms the foundation for
+
+micro innovation
+
+(see [8] on the benefits of micro-innovations versus macro-innovations).
+
+Here, too, we are seeing a paradigm shift. At the start of the OTR project, we frequently came up against the attitude of “We know our users’ needs intimately – we’ve been doing this for 20 years!”, but we have since increasingly been taking on design thinking methods. We started conducting regular user and customer surveys (research), have developed a
+
+new openness
+
+(see [9] for the terms Shoshin or beginner’s mind that are frequently used in design thinking), and come to the realization that we simply cannot know every requirement.
+
+The four catalysts of the Mercedes-Benz ITS strategy
+
+This paradigm shift towards design thinking is supported by the application of four catalysts:
+
+A radical process simplification reduces the complexity and duplication of tasks, which allows greater automation of simpler processes.
+
+A shift of focus away from the project and towards the product itself. The goal is to use data to reduce costs, increase revenue, and develop your intellectual property and user base.
+
+Using speed as a strategic advantage, e.g. to implement customer requirements promptly in your products through continuous delivery.
+
+The willingness to fearlessly question existing rules and processes and to learn from mistakes and feedback.
+
+Shifting the emphasis from the project to digital products also changes the self-image of the IT department as they move away from being a service provider in the sense of IT Service Management (ITSM) (also refer to
+
+ITIL
+
+[10]) and towards
+
+collaboration as equals
+
+(see [11]). In the OTR project, we experience this in the day-to-day work of our cross-functional teams. For example, business product owners work on initiatives together with IT product owners, with both of them incorporating their perspectives and skills on an equal footing.
+
+We also consistently implement other elements of the Mercedes-Benz strategy in the OTR project:
+
+Use of free and open-source software
+
+Cloud-based operation that enables DevOps
+
+Implementation of microservices that can be reached via APIs
+
+Working in dynamic swarms
+
+Use of Mercedes-Benz standard security providers
+
+All of these project components contribute directly to the Mercedes-Benz IT strategy.
+
+We consistently implement the Mercedes-Benz IT strategy in the OTR project.
+
+Ways of Working
+
+From the very beginning, our goal was to create a safe working environment for every member of the team: one that would allow anyone to make and learn from
+
+mistakes in a controlled environment
+
+(see [12] on an in-depth discussion of the Kaizen culture). This openness to mistakes works on two levels. First of all, we promote knowledge acquisition and innovation. Secondly, it is easier to introduce new (e.g. agile) practices by experimenting; i.e. coming up with hypotheses, performing experiments to test them, and measuring their success or failure to potentially
+
+change direction
+
+. Here, too, we apply the principle of small batch sizes, meaning we regularly make small changes to the way of working instead of first designing a new way of working in detail, agreeing on this design, and then implementing it through change management activities. In this way, we can also apply the principles of the agile working method when implementing a paradigm shift.
+
+Questioning fundamental values and ways of working and unlearning practices takes a great deal of effort. The following circumstances helped us approach the transformation:
+
+The automobile industry is currently undergoing a
+
+fundamental transformation
+
+(refer to [13], for example). The societal, technical, and economic upheavals behind this are now so prevalent in public discourse that the need for action is clear. While the transformation represents a challenge or even a threat on the one hand, on the other it also enables change projects of this kind.
+
+At the start of the OTR project, we were met with great openness regarding agile methods and the aforementioned paradigm shifts. Even during the initial two-week inception phase we repeatedly heard the motto “trust the process.” This demonstrates the pledge of confidence that the project employees at Mercedes-Benz – who had previously only rarely come into contact with agile methods – made to us.
+
+Openness, transparency, regular retrospectives, and the opportunity to bring even difficult topics to the table help us to retain this trust, to nurture it, and to maintain the momentum of change.
+
+Retrospective
+
+Team Setup and Abilities
+
+Digital product development is based on a whole range of abilities that teams or organizational units must possess. To implement agile methods in a truly successful way in software development, simply introducing Scrum is far from sufficient. In addition to the familiar practices of agile development, other requirements include test automation, continuous delivery, microservices, and infrastructure as code. Approaches such as design thinking or DevOps are also necessary. To give us an overview of these abilities within the team, we structured them into six categories: organizational design, product design, technology, strategy, and culture (in [14] D. Frese suggests technology, organisational design, product design, and strategy (
+
+TOPS
+
+), in [1]
+
+Forsgren, Humble, and Kim
+
+propose a classification into continuous delivery, architecture, product and process, lean management and monitoring). The following figure shows a selection of the most important abilities, many of which are mutually supportive or enhance the positive impact of the others (in [15]
+
+Martin Fowler
+
+notes “[...] all of this stuff flows together. The most important thing about Extreme Programming is that the individual practices of Extreme Programming reinforce each other”).
+
+Here are several theories to demonstrate these relationships:
+
+If teams are to work autonomously, the necessary abilities, and therefore individuals, must be available in the team. This inevitably leads to cross-functional teams.
+
+The scaling up of agile product teams necessitates a reduction of dependencies between teams. Microservices can help strengthen this autonomy.
+
+The introduction and operation of a microservice infrastructure requires capabilities such as the use of automated deployment pipelines (CI/CD), infrastructure automation, monitoring, etc. (see
+
+M. Fowler
+
+[16]).
+
+Hypothesis-driven development is based on the possibility of making mistakes. A safe work environment is necessary for this.
+
+Design thinking requires creativity, which in turn benefits from diversity.
+
+Implementing agile principles requires test automation because frequent deployments are impossible with manual tests. This is achieved by implementing a
+
+test pyramid
+
+(for details on this, see Hermann Vocke [17]).
+
+Overview of mutually supportive abilities
+
+In the OTR project, we make use of the interactions between these abilities and have implemented almost all of the abilities presented in the image above.
+
+Still, agile software development is just a small part of the ability spectrum that leading software-focused companies currently use. Organizations that are at the start of their digital transformation therefore require external support. For us, the focus here is not on training or coaching. Our experience has shown that paradigm shifts can be implemented faster and more profitably through collaboration in actual projects. The important thing is to involve project employees who already
+
+actively live
+
+out these principles and abilities.
+
+Living Out Agility
+
+According to a
+
+survey by McKinsey
+
+[18], agile software development is now state of the art. Martin Fowler [15], Thoughtworks’ Chief Scientist, supports this theory but also reports on a phenomenon he calls “
+
+faux agile
+
+” (other authors call this
+
+fake agile
+
+(see [19]) or
+
+cargo cult agile
+
+(see [20])). The authors frequently experience situations in which teams proudly claim that they work according to agile methods. Often this is still very far away – in a positive sense – from what Ron Jeffries describes as
+
+Dark Scrum
+
+(see [21])
+
+. We would therefore like to emphasize that assigning roles based on Scrum, maintaining a backlog, organizing daily stand-ups, and working with stickies is just the start. We believe that it is more important to concentrate on
+
+agile principles
+
+(see [22]) than to strictly follow methods such as Scrum, Kanban, or SAFe (Scaled Agile Framework). These principles focus on value creation for customers and self-organizing, cross-functional, autonomous teams that supply working software at short intervals.
+
+One fundamental principle is to allow the individual teams the freedom to determine the specific working methods, tools used, or even programming environments themselves within certain guidelines. This is facilitated by the
+
+microservice architecture
+
+(see [23]) in particular. For example, in the OTR project, some teams use Clojure while others use Kotlin as a programming language in the back end. Some teams work with two-week sprints, while others use continuous delivery principles or Kanban. Some teams estimate the size of user stories with story points, while other teams take a
+
+NoEstimates
+
+approach.
+
+We are convinced that this freedom can ultimately increase development speed. Mercedes-Benz’s approach of
+
+making greater use of free and open-source software
+
+also had a positive impact here (see [24]).
+
+Another principle is the continuous adjustment and further development of the way of working. We regularly demonstrate our way of working to interested colleagues from Mercedes-Benz. From week to week, we see changes on our office walls: for example, the structure of the Kanban board has changed, the roadmap has replaced the lean value tree, the skill matrix was not there last week, etc. (Note: (i.e we use our office walls as what is called an
+
+Information Radiator
+
+, meaning we use large surfaces to present information visually and interactively, see [25].)
+
+One result of the fundamentally changed procedure is the go-live or, as we call it, the
+
+handover
+
+. Many of us are familiar with this process as a stressful
+
+event
+
+that regularly takes place at weekends or overnight to schedule the required downtime during times when the application is not used very much.
+
+In the OTR project, we have implemented the application handover as a
+
+no-event
+
+. In this process, we release the application and inform the users about this via email. This is possible because the latest state of the application is almost always available in the production environment thanks to the
+
+continuous delivery approach
+
+(see [26]). The handover of other functions also takes place in the same way. We use
+
+feature toggles
+
+(see [27]) to activate new components and then inform the users about this.
+
+Summary and Outlook
+
+In the first part of this article, we identified the paradigm shifts of a digital transformation, explained the case study – the One Touch Retail (OTR) project – presented the approach Mercedes-Benz is using to address the transformation, discussed agile ways of working based on the case study, and investigated how we can avoid faux agile.
+
+In the
+
+second part
+
+, we will go into more depth, including clarifying the role of management, presenting examples of work in cross-functional teams, taking a look at ceremonies, discussing the contribution of diversity in the search for creative solutions, getting to know another paradigm shift in the area of customer-centricity, and providing an outlook regarding the further progress of the digital transformation.
+
+References
+
+[1] Nicole Forsgren, Jez Humble und Gene Kim: “Accelerate”, IT Revolution, Portland, 2018
+
+[2] Donald G. Reinertsen: “The Principles of Product Development Flow: Second Generation Lean Product Development”, Celeritas Publishing, Redondo Beach, 2009
+
+[3] Wikipedia: “Organizational Change Fatigue”, https://en.wikipedia.org/wiki/Organizational_change_fatigue
+
+[4] Mercedes-Benz: “Best Customer Experience 4.0"" – Press Presentation in The Hague: Kick-Off for the luxury experience 4.0: Mercedes-Benz presents the next chapter of the global sales strategy ""Best Customer Experience”, https://media.daimler.com/marsMediaSite/ko/en/43937825, 2019
+
+[5] Thoughtworks: “Innovative software development for the sales experience of the future”, https://www.thoughtworks.com/clients/daimler, 2017
+
+[6] Jan Brecht: “My top three IT priorities at Mercedes-Benz to focus on in 2018”, LinkedIn, https://www.linkedin.com/pulse/my-top-three-priorities-mercedes-benz-focus-2018-jan-brecht/, 2018
+
+[7] Jan Brecht: “#TwiceAsFast: How to build a learning based culture”, LinkedIn, https://www.linkedin.com/pulse/twiceasfast-how-implement-learning-based-culture-jan-brecht/, 2019
+
+[8] Daniel Newman: “Why Micro-Innovation should be at the Core of your Digital Transformation”, Forbes, https://www.forbes.com/sites/danielnewman/2016/02/02/why-micro-innovation-should-be-at-the-core-of-your-digital-transformation/#5405b0837684, 2016
+
+[9] Jesse Russel Morgan: “Beginner’s Mind in UX Design”, https://uxdesign.cc/beginners-mind-in-ux-design-with-shunryu-suzuki-11a00787c8a9?gi=f923553c2102, 2018
+
+[10] Wikipedia: “ITIL”, https://en.wikipedia.org/wiki/ITIL
+
+[11] Mark Schwartz: “A Seat at the Table: IT Leadership in the Age of Agility”, IT Revolution, Portland, 2017
+
+[12] David J. Anderson: “Kanban, Successful Evolutionary Change for Your Technology Business”, Sequim, Washington, 2010
+
+[13] McKinsey: “Automotive Revolution - Perspective towards 2030”, https://www.mckinsey.com/industries/automotive-and-assembly/our-insights/disruptive-trends-that-will-transform-the-auto-industry/de-de, 2016
+
+[14] Dino Frese: “How modern IT is like Tetris and how TOPS makes sense of everything”, Thoughtworks, https://www.thoughtworks.com/insights/blog/how-modern-it-tetris-how-tops-makes-sense-everything, 2018
+
+[15] Martin Fowler: “The State of Agile Software in 2018”, https://martinfowler.com/articles/agile-aus-2018.html, 2018
+
+[16] Martin Fowler: “Microservices Prerequisites”, https://martinfowler.com/bliki/MicroservicePrerequisites.html, 2014
+
+[17] Hermann Vocke: “The Practical Test Pyramid”, MartinFowler.com, https://martinfowler.com/articles/practical-test-pyramid.html, 2018
+
+[18] McKinsey: “How to create an agile organization”, Survey, https://www.mckinsey.com/business-functions/organization/our-insights/how-to-create-an-agile-organization, 2017
+
+[19] Steve Denning: “Understanding Fake Agile”, Forbes Media, https://www.forbes.com/sites/stevedenning/2019/05/23/understanding-fake-agile/#35870f914bbe, 2019
+
+[20] Wikipedia: “Cargo Cult Science”, https://en.wikipedia.org/wiki/Cargo_cult_science
+
+[21] Ron Jeffries: “Dark Scrum”, https://ronjeffries.com/articles/016-09ff/defense/, 2016
+
+[22] Agile Manifesto: “Principles behind the Agile Manifesto”, https://agilemanifesto.org/principles.html, 2001
+
+[23] Sam Newman: “Building Microservices”, O’Reilly Media, Sebastopol, CA., 2015
+
+[24] Torben Stephan, Ludger Schmitz “Interview with Vlado Koljibabic, Head of CASE IT at Daimler”, Data Center Insider, https://www.datacenter-insider.de/wir-kennen-die-vorteile-von-open-source-a-708188/, 2018
+
+[25] Kasandra Fcong “Transform Meetings with a Great Information Radiator”, Thoughtworks,  https://www.thoughtworks.com/de/insights/blog/transform-meetings-great-information-radiator, 2016
+
+[26] Jez Humble and David Farley “Continuous Delivery: Reliable Software Releases Through Build, Test, and Deployment Automation”, Addison Wesley, 2011
+
+[27] Pete Hodgson: “Feature Toggles (aka Feature Flags)”,  https://www.martinfowler.com/articles/feature-toggles.html, 2017
+
+=== SECTION: FIRST_PARTY_CASE_STUDY (URI: https://www.casestudies.com/company/coupa-software/case-study/thoughtworks-stays-at-the-forefront-of-digital-innovation-with-coupa) ===
+Case Study: ThoughtWorks achieves greater spend visibility and compliance with Coupa Software
+
+A
+
+Coupa Software
+
+Case Study
+
+Thoughtworks Stays at the Forefront of Digital Innovation with Coupa
+
+ThoughtWorks, a large US-headquartered global technology consultancy, was struggling with a decentralized procurement model, manual invoice approvals, and low spend visibility across 18 countries. To support growth and tighter compliance, the company turned to Coupa Software for a procure-to-payment platform and SIM capabilities that could help standardize processes and provide a single source of financial truth.
+
+Coupa Software implemented a unified digital procurement and invoicing platform that improved control, compliance, and reporting across the business. The results included 98% of vendor spend going through Coupa, 100% geographic coverage, 99% of recurring spend vendors onboarded, and a single process for SOX and ISO27001 audits, giving ThoughtWorks greater spend visibility, stronger compliance, and more efficient operations.
+
+Open case study document...
+
+=== SECTION: FIRST_PARTY_CASE_STUDY (URI: https://www.casestudies.com/company/monday-com/case-study/thoughtworks-improves-global-team-collaboration-by-73-with-mondaycom) ===
+Case Study: ThoughtWorks achieves 73% better global collaboration with monday.com
+
+A
+
+monday.com
+
+Case Study
+
+ThoughtWorks improves global team collaboration by 73% with monday.com
+
+ThoughtWorks, a global software consultancy, faced significant challenges in managing its global marketing operations. Their Center of Excellence (CoE) teams were inundated with requests via a generic email inbox, leading to overwhelming communication threads, international conference calls, and difficulty tracking assignments and availability. This process was time-consuming and lacked transparency, making it hard to manage resources effectively for global campaigns.
+
+By implementing monday.com Work Management, ThoughtWorks centralized all communication and project tracking onto a single platform. monday.com provided one-click automations to streamline workflows and offered total visibility into team workloads and campaign timelines. This solution led to a 73% improvement in global team collaboration, a 55% reduction in email, and a 41% reduction in conference calls, dramatically increasing operational efficiency.
+
+View this case study…
+
+monday.com
+
+217 Case Studies
+
+Was it helpful? Rate this case study:
+
+Submit Rating
+
+Thank you for your feedback.
+
+=== SECTION: FIRST_PARTY_CASE_STUDY (URI: https://ai-best-practices.com/case-studies/thoughtworks-pilot-finds-ai-generated-acceptance-criteria-reduce-bugs-10) ===
+Background
+
+Requirements analysis is a high-leverage but frequently underinvested step in software delivery. In complex domains, incomplete or ambiguous user stories generate clarification cycles, blocked tickets, and rework downstream. The Thoughtworks pilot tested whether generative AI could improve requirements completeness, particularly for edge case coverage — a dimension that is difficult for human analysts to maintain consistently under time pressure.
+
+What Was Implemented
+
+Haiven generative AI team assistant (Thoughtworks open-source accelerator) deployed for requirements analysis
+
+Reusable context descriptions of the client's domain and architecture defined once and reused across sessions
+
+BA and QA used Haiven to break down three epics into user stories with acceptance criteria and testing scenarios
+
+Human review at all stages — AI acted as assistant, not decision-maker
+
+Results
+
+The client's QA estimated approximately 10% fewer bugs and reasons for rework during testing, attributing this to better edge case coverage in story definitions generated by AI. The BA estimated a ~20% reduction in analysis time , despite the upfront context-creation investment. These figures are self-estimated by pilot participants, not independently measured. The Thoughtworks team noted the sample size (three epics) is too small for definitive conclusions, but plans to expand the pilot to additional teams with varying experience levels.
+
+Lessons
+
+Context orchestration is the most critical factor: AI was not useful until the team had invested in domain and architecture descriptions
+
+AI reduces the effort of blank-page story writing and improves edge case coverage, but the human analyst remains essential for judgment and validation
+
+Review fatigue was not a problem at this scale for experienced analysts, but may be a concern at higher volumes
+
+Teams in complex or unusual domains need more elaborate context setup than teams working in common domains like e-commerce
+
+=== SECTION: FIRST_PARTY_PRACTICE (URI: https://www.thoughtworks.com/) ===
+Meet Thoughtworks'
+
+Agentic Development Platform
+
+AI/works™ packs decades of engineering IP into a platform that changes the economics of building and modernizing industrial-grade systems. With our technologists steering AI/works™, you get higher quality systems, delivered at radically lower cost with enterprise-grade governance and control. Faster than you can say “algorithmic bias"".
+
+Leaders want
+
+AI to work
+
+by ‘next Tuesday’
+
+But there are three foundations you need in place first. This is where Thoughtworks comes in. Rebuild. Rewire. Reimagine. Thoughtworks transformation pathways for the AI era.
+
+AI that works
+
+in action
+
+Our clients get to focus on improving commercial results, rather than having their stack run rings around them.
+
+Partner ecosystems
+
+built on engineering foundations
+
+We work with leading cloud, data and compute APIs, including AWS, Google Cloud, Microsoft Azure, Databricks and Snowflake. Through a collaboration with Mechanical Orchard, we support deep mainframe renewal.",https://www.thoughtworks.com/,14,"ats_requisitions,community_and_social,first_party_case_study,first_party_practice,general_web"
+onixnet.com,"# Multi-Source Evidence Dossier: onixnet.com
+
+=== SECTION: FIRST_PARTY_PRACTICE (URI: https://www.onixnet.com/) ===
+Migrate data  to the cloud, transform data into actionable insights, and drive smarter business decisions.
+
+Read more
+
+Harness the power of AI to automate processes, optimize efficiency, and unlock new opportunities.
+
+Read more
+
+Modernize your enterprise contact centers with an AI-powered customer engagement suite.
+
+Read more
+
+Seamlessly transition to the cloud and modernize your infrastructure for enhanced agility and scalability.
+
+Read more
+
+Build, deploy, and manage custom cloud applications tailored to your unique needs.
+
+Read more
+
+Safeguard your sensitive data and ensure regulatory compliance with robust security measures and expert guidance.
+
+Read more
+
+Empower your teams to connect, collaborate, and innovate effortlessly with
+
+cutting-edge digital tools.
+
+Read more
+
+Customer Engagement Suite
+
+Extract valuable location-based insights and make informed decisions with our geospatial solutions.
+
+Read more
+
+Streamline your IT operations and maximize efficiency with intelligent, AI-driven managed services.
+
+Read more
+
+=== SECTION: ATS_REQUISITIONS (URI: https://jobs.ashbyhq.com/onixnet) ===
+Jobs
+
+=== SECTION: FIRST_PARTY_PRACTICE (URI: https://www.onixnet.com/) ===
+Migrate data  to the cloud, transform data into actionable insights, and drive smarter business decisions.
+
+Read more
+
+Harness the power of AI to automate processes, optimize efficiency, and unlock new opportunities.
+
+Read more
+
+Modernize your enterprise contact centers with an AI-powered customer engagement suite.
+
+Read more
+
+Seamlessly transition to the cloud and modernize your infrastructure for enhanced agility and scalability.
+
+Read more
+
+Build, deploy, and manage custom cloud applications tailored to your unique needs.
+
+Read more
+
+Safeguard your sensitive data and ensure regulatory compliance with robust security measures and expert guidance.
+
+Read more
+
+Empower your teams to connect, collaborate, and innovate effortlessly with
+
+cutting-edge digital tools.
+
+Read more
+
+Customer Engagement Suite
+
+Extract valuable location-based insights and make informed decisions with our geospatial solutions.
+
+Read more
+
+Streamline your IT operations and maximize efficiency with intelligent, AI-driven managed services.
+
+Read more
+
+=== SECTION: FIRST_PARTY_PRACTICE (URI: https://www.onixnet.com/contact/) ===
+United States
+
+510 Carnegie Center Drive,
+
+Suite 102
+
+Princeton, NJ 08540
+
+Pune
+
+5th Floor  Zero One, Above Passport   
+        Office, Mundhwa Road, Koregaon Park
+        Extension, Pingale Wasti, Pune, 
+        Maharashtra 411036,  India
+
+Canada
+
+1800-275 Slater St, Ottawa, Canada K1p-5h9
+
+Hyderabad
+
+Survey No. 13(P), 8-C, 1-118WP/08/2, 8th
+        Floor, Western Pearl, Kondapur, Ranga  
+        Reddy District, Hyderabad – 500084,  
+        Telangana, India
+
+Bangalore
+
+Ground Floor, Rathi Legacy, Plot No.19/A
+        Seetharampalya – Hoodi Road,  
+        Doddanakundi Industrial Area 2   
+        Seetharampalya, Hoodi,
+        Bengaluru, Karnataka – 560048
+
+Germany
+
+An d. Alster 6,
+20099 Hamburg,
+Germany
+
+Singapore
+
+1 North Bridge Road,
+#10-06, High Street Centre,
+Singapore, 179094
+
+United Kingdom
+
+Jubilee Business Centre, 211 Kingsbury Road, Kingsbury, London, NW9 8AQ
+
+=== SECTION: FIRST_PARTY_PRACTICE (URI: https://www.onixnet.com/about/) ===
+Onix partners with the world’s top companies to transform with cloud, data, and AI. Meet our team, explore our mission, and find global career opportunities.
+
+=== SECTION: FIRST_PARTY_PRACTICE (URI: https://www.onixnet.com/partners/google-cloud/) ===
+Cutting-edge advanced AI solutions.
+
+Data warehousing, business intelligence, and machine learning.
+
+Data, infrastructure, and migration solutions.
+
+Cloud migration, infrastructure modernization, and hybrid cloud solutions.
+
+Identity and access management, threat detection, and data loss prevention.
+
+Cloud-native application development and API management.
+
+Google Workspace optimization and change management.
+
+Maps, Search, and Chrome integrations.
+
+=== SECTION: FIRST_PARTY_PRACTICE (URI: https://www.onixnet.com/news/) ===
+Stay updated with Onix’s latest news, announcements, and industry milestones to keep you informed about our progress, innovations, and developments.",https://www.onixnet.com/,7,"ats_requisitions,first_party_practice"

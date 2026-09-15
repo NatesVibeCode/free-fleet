@@ -10,8 +10,10 @@ This example demonstrates how to discover, evaluate, qualify, and score potentia
 
 ## Files in this Directory
 
-- `sample_partners.csv`: Sample candidates including premier cloud consultancies (Slalom), advanced systems integrators (Trace3), specialized boutique data consultancies (DataBridge), regional IT SIs (Apex), creative web agencies (PixelCraft), and pure SaaS software vendors (Stripe).
-- `task.json`: Pre-configured closed task specification requiring a checklist-derived `score` (0–100), `fit_tier`, `identified_practice`, and `reasoning`.
+- `sample_partners.csv`: Small hand-written sample (Slalom, Trace3, DataBridge, Apex, PixelCraft, Stripe) for a first smoke run.
+- `sample_partners_multisource.csv`: The same contract with several sources per partner and a `source_categories` column, so the multi-source gate has something to work with.
+- `showcase_partners.csv`: **Real** dossiers built by the sourcing runner (`harness-fleet partners enrich <domain>`) for trace3.com, slalom.com, excella.com, thoughtworks.com and onixnet.com — first-party practice pages, ATS boards, case studies, community threads and press in one row per partner.
+- `task.json`: Pre-configured closed task specification: the 10-question revenue checklist (100 points), the attribute set, and the pipeline-computed `score`, `fit_tier`, `identified_practice`, `revenue_hypothesis` and `reasoning`.
 
 ---
 
@@ -53,6 +55,45 @@ rank,item_id,score,fit_tier,identified_practice,reasoning,primary_quote_text,quo
 1,slalom.com,100,tier_1,"Premier Consulting Partner & Cloud Data Platform Modernization","Solutions architects work directly with Fortune 500 clients delivering Snowflake, Kafka, and Kubernetes solutions","work directly with Fortune 500 enterprise clients to architect, deploy, and modernize cloud data platforms",1,"",...
 2,trace3.com,100,tier_1,"Enterprise Apache Kafka Streaming & Multi-Region Kubernetes Migration","Turnkey client solutions with case study for top-10 financial services customer","Leading the enterprise Apache Kafka streaming infrastructure deployment and multi-region Kubernetes migration",1,"",...
 ```
+
+---
+
+## Sourcing: build the candidate list first
+
+`partners find` runs the packaged sourcing plan (`harness_fleet/data/partner_sources.json`) cold, and
+`partners enrich` fills in one partner you already know about. Both write the same CSV contract.
+
+```bash
+# Cold discovery: search every configured backend, keep only attributed hits.
+harness-fleet partners find --tech Kafka --vertical fintech --max 8 --output partners.csv
+
+# Enrich one partner into a single multi-source dossier row.
+harness-fleet partners enrich trace3.com --max-pages 8 --output partner-trace3.csv
+```
+
+The attribution rule is what keeps this honest: a hit counts toward a partner only when that
+partner's domain or name appears in the URL or the captured text, and a page is only a candidate
+when it actually talks about delivering work — so a blog post about *tracing* never becomes a
+partner called Trace3.
+
+---
+
+## The 10-Question Revenue Checklist (100 points)
+
+| Question | Pts | True only when |
+|---|---|---|
+| `q1_billable_delivery` | 15 | they sell project-based delivery (engagement, SOW, implementation, managed service) |
+| `q2_stack_delivery` | 15 | delivery of the target technology is evidenced for named clients |
+| `q3_delivery_hiring` | 10 | an open requisition on their own ATS board is for delivery work in the stack |
+| `q4_client_outcome` | 15 | a named client and a concrete outcome appear, not a capability claim |
+| `q5_commercial_scale` | 5 | published commercial terms (minimum project size, rate, headcount) |
+| `q6_vendor_alliance` | 10 | a vendor partner tier, certification, or marketplace listing is stated |
+| `q7_vertical_focus` | 5 | one vertical has repeat delivery proof |
+| `q8_independent_validation` | 15 | a source that is not their own marketing vouches for delivery |
+| `q9_published_engineering` | 5 | they publish technical work of their own |
+| `q10_growth_signal` | 5 | a dated growth event in the last twelve months |
+
+Tiers: **tier_1** 85–100, **tier_2** 70–84, **tier_3** 50–69, **unfit** below 50.
 
 ---
 

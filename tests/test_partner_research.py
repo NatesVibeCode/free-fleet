@@ -28,18 +28,25 @@ def test_partner_research_preset_structure():
     assert preset["checklist"] == PARTNER_CHECKLIST
     assert sum(PARTNER_CHECKLIST.values()) == 100
     assert set(PARTNER_CHECKLIST.keys()) == {
-        "q1_target_stack",
-        "q2_service_model",
-        "q3_industry_verticals",
-        "q4_geography_delivery",
-        "q5_vendor_alliances",
-        "q6_case_study_proof",
+        "q1_billable_delivery",
+        "q2_stack_delivery",
+        "q3_delivery_hiring",
+        "q4_client_outcome",
+        "q5_commercial_scale",
+        "q6_vendor_alliance",
+        "q7_vertical_focus",
+        "q8_independent_validation",
+        "q9_published_engineering",
+        "q10_growth_signal",
     }
     assert set(PARTNER_CHECKLIST_DESCRIPTIONS.keys()) == set(PARTNER_CHECKLIST.keys())
     assert len(PARTNER_EVIDENCE_TERMS) >= 10
     assert "partner" in PARTNER_EVIDENCE_TERMS
     assert "consulting" in PARTNER_EVIDENCE_TERMS
     assert "implementation" in PARTNER_EVIDENCE_TERMS
+    # The revenue checklist must stay solvable from public sourcing signals only.
+    assert PARTNER_HALF_LIVES["q3_delivery_hiring"] == 21.0
+    assert PARTNER_HALF_LIVES["q10_growth_signal"] == 90.0
     assert set(PARTNER_HALF_LIVES.keys()) == set(PARTNER_CHECKLIST.keys())
 
 
@@ -55,7 +62,15 @@ def test_create_task_from_partner_research_preset():
     assert "answers" in task.claims_schema["properties"]
     assert "source_diversity_count" in task.claims_schema["properties"]
     assert "fit_tier" in task.claims_schema["properties"]
-    assert task.claims_schema["required"] == ["checklist", "identified_practice", "reasoning"]
+    assert task.claims_schema["required"] == [
+        "checklist", "identified_practice", "revenue_hypothesis", "reasoning",
+    ]
+    answers = task.claims_schema["properties"]["answers"]
+    assert {"client_logos", "hiring_signals", "commercial_terms", "revenue_motion",
+            "third_party_mentions", "engineering_output", "growth_signals",
+            "evidence_categories"} <= set(answers["properties"])
+    # Every attribute is required so a blank is an explicit "not in the sources".
+    assert set(answers["required"]) == set(answers["properties"])
 
 
 def test_bundler_canonicalize_and_classify():

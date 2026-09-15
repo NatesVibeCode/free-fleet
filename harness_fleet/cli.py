@@ -1111,6 +1111,48 @@ def cmd_serve(args: argparse.Namespace) -> None:
     run_mcp_server(args.workspace_root, args.db)
 
 
+def cmd_partners(args: argparse.Namespace) -> None:
+    """Run the partner sourcing plan: find candidates, or enrich one partner."""
+    from .bundler import export_bundled_csv
+    from .partner_sourcing import enrich_partner, find_partners, load_plan
+
+    plan = load_plan(getattr(args, "plan", None))
+    output = Path(getattr(args, "output", None) or (
+        "partners.csv" if args.partners_command == "find" else f"partner-{args.domain}.csv"
+    ))
+    common = dict(
+        plan=plan,
+        backends=getattr(args, "backend", None) or None,
+        max_per_query=int(getattr(args, "max", 8) or 8),
+        delay=float(getattr(args, "delay", 1.0) or 0.0),
+        snippets_only=bool(getattr(args, "snippets_only", False)),
+    )
+    if args.partners_command == "find":
+        items, report = find_partners(
+            tech=getattr(args, "tech", "") or "",
+            vertical=getattr(args, "vertical", "") or "",
+            subreddits=getattr(args, "subreddit", None) or [],
+            **common,
+        )
+    else:
+        items, report = enrich_partner(
+            args.domain,
+            max_pages=int(getattr(args, "max_pages", 8) or 8),
+            include_fetch=not bool(getattr(args, "no_fetch", False)),
+            **common,
+        )
+    path = export_bundled_csv(items, output)
+    payload = {"output": str(path), "partners": len(items), "report": report.as_dict()}
+    _emit(
+        payload,
+        args.json,
+        f"{'Found' if args.partners_command == 'find' else 'Enriched'} {len(items)} partner dossier(s) -> {path}"
+        + (f" ({report.searched} searches, {report.dropped_unattributed} unattributed hits dropped)"
+           if report.searched or report.dropped_unattributed else "")
+        + _format_skips(report.skipped),
+    )
+
+
 def cmd_studio(args: argparse.Namespace) -> None:
     from .studio import run_studio_server
 
@@ -1899,6 +1941,33 @@ def build_parser() -> argparse.ArgumentParser:
     board.add_argument("--host", default="127.0.0.1", help="Host to listen on (default: 127.0.0.1)")
     board.add_argument("--open", action="store_true", help="Open the page in a browser")
     _common(board)
+    partners = commands.add_parser(
+        "partners",
+        help="Run the packaged partner sourcing plan (find candidates, or enrich one partner)",
+    )
+    partner_actions = partners.add_subparsers(dest="partners_command", required=True)
+
+    def _partner_common(p: argparse.ArgumentParser) -> None:
+        p.add_argument("--backend", action="append", help="Limit to specific search backends (repeatable)")
+        p.add_argument("--max", type=int, default=8, help="Max hits per query per backend (default: 8)")
+        p.add_argument("--delay", type=float, default=1.0, help="Politeness delay between fetches (default: 1.0)")
+        p.add_argument("--snippets-only", action="store_true", help="Store search snippets without fetching pages")
+        p.add_argument("--plan", default=None, help="Override the packaged partner source plan")
+        p.add_argument("--output", default=None, help="Output CSV (default: partners.csv)")
+        _common(p)
+
+    partners_find = partner_actions.add_parser("find", help="Cold start: search every backend for partner candidates")
+    partners_find.add_argument("--tech", default="", help="Technology to anchor queries, e.g. Kafka")
+    partners_find.add_argument("--vertical", default="", help="Target vertical, e.g. fintech")
+    partners_find.add_argument("--subreddit", action="append", help="Restrict reddit queries to subreddits (repeatable)")
+    _partner_common(partners_find)
+
+    partners_enrich = partner_actions.add_parser("enrich", help="Enrich one partner already known by domain")
+    partners_enrich.add_argument("domain", help="Partner domain, e.g. trace3.com")
+    partners_enrich.add_argument("--max-pages", type=int, default=8, help="Site pages to crawl (default: 8)")
+    partners_enrich.add_argument("--no-fetch", action="store_true", help="Skip site/ATS/directory fetches; mentions only")
+    _partner_common(partners_enrich)
+
     studio = commands.add_parser("studio", help="Serve the local harness studio UI (localhost only)")
     studio.add_argument("--workspace-root", default=".")
     studio.add_argument("--db", help="SQLite path below workspace root")
@@ -2032,6 +2101,7 @@ def main() -> None:
         "serve": cmd_serve,
         "studio": cmd_studio,
         "board": cmd_board,
+        "partners": cmd_partners,
         "quickstart": cmd_quickstart,
         "discover": cmd_discover,
         "fetch": cmd_fetch,

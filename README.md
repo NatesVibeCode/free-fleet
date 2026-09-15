@@ -450,6 +450,8 @@ Free routes are used by default. A paid route approved in an earlier session mus
 | `studio` | Serve the localhost settings companion (pick harnesses and models; saves the selection to SQLite) |
 | `discover` | Broad web search (`ddgs`, self-hosted SearXNG, HN Algolia, YC, Reddit, Stack Exchange, Discourse, Lobsters, Lemmy, Dev.to) to an accounts file |
 | `fetch` | Fetch URLs, sitemaps, site crawls, ATS boards (Greenhouse/Ashby/Lever), YC profiles, HN/Reddit threads, or Q&A forums to an accounts file |
+| `partners find` | Run the partner sourcing plan cold: fans `harness_fleet/data/partner_sources.json` across every search backend, keeps only hits that attribute the work to a named firm, and writes one dossier per candidate (`--tech`, `--vertical`, `--backend`, `--max`, `--delay`, `--snippets-only`, `--plan`, `--output`) |
+| `partners enrich` | Enrich one partner you already have: their site, ATS board, vendor registry, review pages, and independent mentions, bundled into a single dossier row (`DOMAIN`, `--max-pages`, `--no-fetch`, `--output`) |
 
 Pass `--json` to any command for machine-readable JSON output. `--free-only` is the explicit zero-cost filter (replaces implicit `max-cost=0` sentinel). Long documents are warned when truncated (`partial` slices).
 

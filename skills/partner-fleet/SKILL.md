@@ -83,6 +83,8 @@ Search these channels directly:
 | **Agency Directories** | Clutch.co / G2 Service Providers | `site:clutch.co/it-services "Kafka" OR "Snowflake"` |
 | **Services & Case Studies** | `*.com/services`, `*.com/case-studies` | `site:example.com/case-studies "implemented" OR "migrated"` |
 
+The automated path is the sourcing runner: `harness-fleet partners find --tech <x> --vertical <y>` reads `harness_fleet/data/partner_sources.json`, expands the plan into search calls across every configured backend, keeps only hits that actually attribute the work to a named firm (`is_attributed`), and emits one dossier per candidate entity. Then `harness-fleet partners enrich <domain>` adds first-party pages, ATS boards, vendor registries and community mentions. Manual curation is still fine; both feed the same CSV contract.
+
 Compile discovered items into `partners.csv` with columns:
 - `item_id`: Partner agency domain or identifier (e.g. `slalom.com`, `trace3.com`)
 - `text`: Raw unedited job description, case study excerpt, or practice page description
@@ -96,62 +98,35 @@ See [references/discovery-playbook.md](references/discovery-playbook.md) for dis
 
 Register a typed task with an explicit 0–100 rubric. Every high score must cite an exact quote.
 
-### Standard Claims Schema:
-### 6-Question Gatekeeper Claims Schema:
-```json
-{
-  "type": "object",
-  "properties": {
-    "checklist": {
-      "type": "object",
-      "properties": {
-        "q1_target_stack": {"type": "boolean", "description": "Verified active delivery in target/adjacent tech stack"},
-        "q2_service_model": {"type": "boolean", "description": "Verified turnkey SI/migration practice (false for SaaS or staff aug)"},
-        "q3_industry_verticals": {"type": "boolean", "description": "Verified client work in specific industry verticals"},
-        "q4_geography_delivery": {"type": "boolean", "description": "Verified physical HQ and delivery locations"},
-        "q5_vendor_alliances": {"type": "boolean", "description": "Verified certified partner tiers with adjacent vendors"},
-        "q6_case_study_proof": {"type": "boolean", "description": "Verified project outcome, transformation metric, or case study"}
-      },
-      "required": ["q1_target_stack", "q2_service_model", "q3_industry_verticals", "q4_geography_delivery", "q5_vendor_alliances", "q6_case_study_proof"],
-      "additionalProperties": false
-    },
-    "score": {
-      "type": "integer",
-      "minimum": 0,
-      "maximum": 100,
-      "description": "Computed by pipeline from checklist: 100 points total"
-    },
-    "identified_practice": {
-      "type": "string",
-      "description": "Concise summary of verified partner practice"
-    },
-    "answers": {
-      "type": "object",
-      "description": "Structured answers to the 6 questions backed by cited quotes"
-    },
-    "source_diversity_count": {
-      "type": "integer",
-      "description": "Number of distinct source categories cited in quotes"
-    },
-    "fit_tier": {
-      "enum": ["tier_1", "tier_2", "tier_3", "unfit"],
-      "description": "tier_1 (85-100), tier_2 (70-84), tier_3 (50-69), unfit (<50)"
-    },
-    "reasoning": {
-      "type": "string",
-      "description": "Short explanation grounded in multi-source evidence"
-    }
-  },
-  "required": ["checklist", "identified_practice", "reasoning"],
-  "additionalProperties": false
-}
-```
+### The 10-Question Revenue Checklist (100 points)
 
-### The Multi-Source Completeness Gate:
-- **Tier 1 (85–100)**: All 6 core questions answered `true` with character-exact quotes across $\ge 3$ distinct source types (First-Party, Vendor Registry, Case Study, Review, ATS).
-- **Tier 2 (70–84)**: At least 5 core questions answered `true` across $\ge 2$ distinct source types.
-- **Tier 3 (50–69)**: Partial fit (3–4 questions answered); general agency lacking domain specialization.
-- **Unfit (<50 / Discard)**: Any core question missing with zero evidence, pure SaaS vendor, staff-aug only, or single-source blind spot.
+`harness-fleet init <name> --preset partner-research` is the source of truth — run it with `--json` to print the exact schema it registers. The questions and their weights:
+
+| Question | Pts | True only when |
+|---|---|---|
+| `q1_billable_delivery` | 15 | they sell project-based delivery (engagement, SOW, implementation, managed service). False for licence resellers and pure staff aug. |
+| `q2_stack_delivery` | 15 | the source evidences delivery of the target technology for named clients. |
+| `q3_delivery_hiring` | 10 | an open requisition on their own ATS board is for delivery or engineering work in the target stack. Half-life 21 days. |
+| `q4_client_outcome` | 15 | a named client and a concrete outcome or metric appear, not a capability claim. |
+| `q5_commercial_scale` | 5 | published commercial terms appear: minimum project size, hourly rate, or headcount. |
+| `q6_vendor_alliance` | 10 | a vendor partner tier, certification, or marketplace listing is stated. |
+| `q7_vertical_focus` | 5 | one vertical has repeat delivery proof, not a list of every sector served. |
+| `q8_independent_validation` | 15 | a source that is not their own marketing vouches for delivery: a review, a vendor case study, or a community thread. |
+| `q9_published_engineering` | 5 | they publish technical work of their own (engineering blog, conference talk, open source). |
+| `q10_growth_signal` | 5 | a dated growth event in the last twelve months: funding, acquisition, new office, new practice, award. Half-life 90 days. |
+
+### Attributes captured with the checklist
+
+`answers.target_stack[]`, `answers.service_model` (enum), `answers.industry_verticals[]`, `answers.delivery_coverage`, `answers.vendor_alliances[]`, `answers.case_study_outcome`, `answers.client_logos[]`, `answers.hiring_signals[]`, `answers.commercial_terms{min_project_size,hourly_rate,employees}`, `answers.revenue_motion` (enum), `answers.third_party_mentions[]`, `answers.engineering_output[]`, `answers.growth_signals[]`, `answers.evidence_categories[]` — plus `identified_practice`, `revenue_hypothesis`, `source_diversity_count`, `fit_tier`, and `reasoning`.
+
+Empty list or empty string means the sources did not state it. The model is required to consider every field, so a blank is an explicit "not in the sources", never a silent omission.
+
+### The Evidence Gate
+
+- **Tier 1 (85–100)** — delivery proven, independently validated, growing: at least two source categories with at least one non-first-party, and no core claim resting on `general_web` alone.
+- **Tier 2 (70–84)** — strong delivery evidence with gaps.
+- **Tier 3 (50–69)** — plausible but thin or unproven.
+- **Unfit (below 50)** — licence reseller, staff-aug only, or no delivery evidence.
 
 See [references/scoring-rubric-guide.md](references/scoring-rubric-guide.md) for task templates and instructions.
 

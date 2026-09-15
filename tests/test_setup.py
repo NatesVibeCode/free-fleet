@@ -148,7 +148,11 @@ def test_partner_skill_is_bundled_and_every_copy_matches():
 
 def test_partner_skill_files_are_declared_as_package_data():
     """A skill that is not in package-data is missing from the built wheel."""
-    import tomllib
+    try:
+        import tomllib
+    except ModuleNotFoundError:  # Python 3.10, which this project still supports
+        pytest.importorskip("tomli", reason="needs a TOML parser: tomllib (3.11+) or tomli")
+        import tomli as tomllib  # type: ignore[no-redef]
 
     repository = Path(__file__).resolve().parents[1]
     config = tomllib.loads((repository / "pyproject.toml").read_text(encoding="utf-8"))

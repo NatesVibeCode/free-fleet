@@ -63,7 +63,7 @@ find_python() {
 
 say "harness-fleet installer"
 say ""
-say "Step 1/7 — Finding Python 3.10+"
+say "Step 1/8 — Finding Python 3.10+"
 if ! find_python; then
   say ""
   say "  Your Python is too old or missing."
@@ -78,7 +78,7 @@ ok "Using $PYTHON_BIN"
 # --- 2. create/reuse the virtualenv and install the package ------------------
 
 say ""
-say "Step 2/7 — Preparing a private Python environment (.venv)"
+say "Step 2/8 — Preparing a private Python environment (.venv)"
 # mkdir first so the log redirect below always has somewhere to write.
 mkdir -p "$VENV_DIR"
 if [ ! -x "$VENV_PY" ]; then
@@ -106,7 +106,7 @@ ok "harness-fleet installed at $CLI"
 # --- 3. choose and create the workspace -------------------------------------
 
 say ""
-say "Step 3/7 — Creating the workspace"
+say "Step 3/8 — Creating the workspace"
 WS="${1:-$HOME/harness-fleet-workspace}"
 mkdir -p "$WS" || fail "Could not create the workspace directory: $WS"
 # Canonicalize to an absolute path. Every step below cds into the workspace, so a
@@ -123,7 +123,7 @@ DB="$WS/harness-fleet.db"
 # --- 4. configure the workspace (skills + database) --------------------------
 
 say ""
-say "Step 4/7 — Configuring the workspace"
+say "Step 4/8 — Configuring the workspace"
 if ! ( cd "$WS" && "$CLI" setup --workspace-root "$WS" --db "$DB" ) >>"$LOG" 2>&1; then
   fail "Workspace setup failed. See $LOG for details."
 fi
@@ -132,7 +132,7 @@ ok "Workspace configured"
 # --- 5. refresh model routes (fixes fresh-DB onboarding; offline-safe) -------
 
 say ""
-say "Step 5/7 — Refreshing model routes (needs internet)"
+say "Step 5/8 — Refreshing model routes (needs internet)"
 if ( cd "$WS" && "$CLI" routes --db "$DB" --refresh ) >>"$LOG" 2>&1; then
   ok "Routes refreshed"
 else
@@ -144,7 +144,7 @@ fi
 # --- 6. run the offline demo -------------------------------------------------
 
 say ""
-say "Step 6/7 — Running the offline demo (no API keys needed)"
+say "Step 6/8 — Running the offline demo (no API keys needed)"
 DEMO_JSON="$WS/runs/demo-01/clean_packet.json"
 DEMO_CSV="$WS/runs/demo-01/clean_packet.csv"
 if [ -f "$DEMO_JSON" ] && [ -f "$DEMO_CSV" ]; then
@@ -163,7 +163,7 @@ fi
 # --- 7. register with Claude Desktop / Cursor --------------------------------
 
 say ""
-say "Step 7/7 — Registering harness-fleet with Claude Desktop / Cursor"
+say "Step 7/8 — Registering harness-fleet with Claude Desktop / Cursor"
 # Desktop apps do not inherit this shell's environment, so hand the caller's
 # OpenRouter key to the MCP server when one is set (the CLI never prints values).
 MCP_INSTALL_ARGS=(--workspace-root "$WS" --db "$DB")
@@ -188,6 +188,36 @@ else
   }
 }
 JSON
+fi
+
+# --- 8. getting free model access ------------------------------------------
+
+say ""
+say "Step 8/8 — Getting free model access (2 minutes)"
+if [ -n "${OPENROUTER_API_KEY:-}" ]; then
+  ok "OpenRouter key detected — free OpenRouter models are ready to use"
+elif command -v opencode >/dev/null 2>&1; then
+  ok "OpenCode is installed — sign in once if you have not: opencode auth login"
+else
+  warn "No free models are connected yet, so a real run cannot start."
+  say "  Pick whichever is easiest for you:"
+  say ""
+  say "  1. OpenRouter — one signup, works with every fleet:"
+  say "       https://openrouter.ai/          (create the account)"
+  say "       https://openrouter.ai/keys      (create a key, copy it)"
+  say "     then in a terminal:"
+  say "       export OPENROUTER_API_KEY=\"sk-or-...\""
+  say "       re-run this installer to hand the key to your assistant too"
+  say ""
+  say "  2. OpenCode — free hosted models:"
+  say "       curl -fsSL https://opencode.ai/install | bash"
+  say "       opencode auth login"
+  say ""
+  say "  3. Your own computer — no signup at all:"
+  say "       https://ollama.com/download"
+  say ""
+  say "  Full walkthrough, including what the free tiers actually allow:"
+  say "    $SCRIPT_DIR/FREE-ACCESS.md"
 fi
 
 # --- 8. summary --------------------------------------------------------------

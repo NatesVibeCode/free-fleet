@@ -90,7 +90,7 @@ function Find-Python {
 
 Say "harness-fleet installer"
 Say ""
-Say "Step 1/7 - Finding Python 3.10+"
+Say "Step 1/8 - Finding Python 3.10+"
 if (-not (Find-Python)) {
   Say ""
   Say "  Your Python is too old or missing."
@@ -105,7 +105,7 @@ Ok "Using $pythonExe $($pythonArgs -join ' ')"
 # --- 2. create/reuse the virtualenv and install the package ------------------
 
 Say ""
-Say "Step 2/7 - Preparing a private Python environment (.venv)"
+Say "Step 2/8 - Preparing a private Python environment (.venv)"
 # Create the directory first so the log redirect below always has somewhere to write.
 New-Item -ItemType Directory -Force -Path $venvDir | Out-Null
 if (-not (Test-Path $venvPy)) {
@@ -140,7 +140,7 @@ Ok "harness-fleet installed at $cli"
 # --- 3. choose and create the workspace -------------------------------------
 
 Say ""
-Say "Step 3/7 - Creating the workspace"
+Say "Step 3/8 - Creating the workspace"
 $ws = if ($args.Count -ge 1) { $args[0] } else { Join-Path $HOME "harness-fleet-workspace" }
 New-Item -ItemType Directory -Force -Path $ws | Out-Null
 # Canonicalize to an absolute path. Every step below Push-Location's into the
@@ -157,7 +157,7 @@ $db = Join-Path $ws "harness-fleet.db"
 # --- 4. configure the workspace (skills + database) --------------------------
 
 Say ""
-Say "Step 4/7 - Configuring the workspace"
+Say "Step 4/8 - Configuring the workspace"
 Push-Location $ws
 try {
   & $cli setup --workspace-root $ws --db $db *>> $log
@@ -171,7 +171,7 @@ Ok "Workspace configured"
 # --- 5. refresh model routes (fixes fresh-DB onboarding; offline-safe) -------
 
 Say ""
-Say "Step 5/7 - Refreshing model routes (needs internet)"
+Say "Step 5/8 - Refreshing model routes (needs internet)"
 Push-Location $ws
 try {
   & $cli routes --db $db --refresh *>> $log
@@ -190,7 +190,7 @@ if ($routesCode -eq 0) {
 # --- 6. run the offline demo -------------------------------------------------
 
 Say ""
-Say "Step 6/7 - Running the offline demo (no API keys needed)"
+Say "Step 6/8 - Running the offline demo (no API keys needed)"
 $demoJson = Join-Path $ws "runs\demo-01\clean_packet.json"
 $demoCsv  = Join-Path $ws "runs\demo-01\clean_packet.csv"
 if ((Test-Path $demoJson) -and (Test-Path $demoCsv)) {
@@ -214,7 +214,7 @@ if (-not (Test-Path $demoJson) -or -not (Test-Path $demoCsv)) {
 # --- 7. register with Claude Desktop / Cursor --------------------------------
 
 Say ""
-Say "Step 7/7 - Registering harness-fleet with Claude Desktop / Cursor"
+Say "Step 7/8 - Registering harness-fleet with Claude Desktop / Cursor"
 # Desktop apps do not inherit this shell's environment, so hand the caller's
 # OpenRouter key to the MCP server when one is set (the CLI never prints values).
 $mcpInstallArgs = @("mcp", "install", "--workspace-root", $ws, "--db", $db)
@@ -239,6 +239,34 @@ if ($LASTEXITCODE -eq 0) {
     }
   } | ConvertTo-Json -Depth 5
   Say $manualEntry
+}
+
+# --- 8. getting free model access ------------------------------------------
+
+Say ""
+Say "Step 8/8 - Getting free model access (2 minutes)"
+if ($env:OPENROUTER_API_KEY) {
+  Ok "OpenRouter key detected - free OpenRouter models are ready"
+} elseif (Get-Command opencode -ErrorAction SilentlyContinue) {
+  Ok "OpenCode is installed - sign in once if you have not: opencode auth login"
+} else {
+  Warn "No free models are connected yet, so a real run cannot start."
+  Say "  Pick whichever is easiest for you:"
+  Say ""
+  Say "  1. OpenRouter - one signup, works with every fleet:"
+  Say "       https://openrouter.ai/          (create the account)"
+  Say "       https://openrouter.ai/keys      (create a key, copy it)"
+  Say "     then set it for your terminals:"
+  Say "       setx OPENROUTER_API_KEY \"sk-or-...\""
+  Say ""
+  Say "  2. OpenCode - free hosted models:"
+  Say "       npm install -g opencode-ai      (or: choco install opencode)"
+  Say "       opencode auth login"
+  Say ""
+  Say "  3. Your own computer - no signup at all:  https://ollama.com/download"
+  Say ""
+  Say "  Full walkthrough, including what the free tiers actually allow:"
+  Say "    $scriptDir\FREE-ACCESS.md"
 }
 
 # --- 8. summary --------------------------------------------------------------

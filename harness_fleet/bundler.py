@@ -14,7 +14,7 @@ from pathlib import Path
 from typing import Any
 from urllib.parse import urlparse
 
-from .models import InputItem
+from .models import InputItem, JsonValue
 
 # Known directory & platform domains mapped to source categories
 REGISTRY_DOMAINS = (
@@ -189,7 +189,9 @@ def bundle_records(
         if len(hits) < min_sources:
             continue
 
-        categories = sorted({h["source_category"] for h in hits if h["source_category"]})
+        categories: list[str] = sorted(
+            {h["source_category"] for h in hits if h["source_category"]}
+        )
         if len(categories) < min_categories:
             continue
 
@@ -224,14 +226,23 @@ def bundle_records(
                 metadata={
                     "entity": entity_id,
                     "source_count": len(hits),
-                    "source_categories": categories,
+                    "source_categories": [str(c) for c in categories],
                     "category_count": len(categories),
-                    "source_uris": all_uris,
+                    "source_uris": [str(u) for u in all_uris],
                 },
             )
         )
 
     return bundled_items
+
+
+def _string_list(value: Any) -> list[str]:
+    """A metadata value read back as a list of strings, whatever shape it is."""
+    if isinstance(value, str):
+        return [value]
+    if isinstance(value, (list, tuple)):
+        return [str(item) for item in value]
+    return []
 
 
 def load_and_bundle(
@@ -273,6 +284,6 @@ def export_bundled_csv(
                 item.text,
                 item.source_uri or "",
                 meta.get("source_count", 1),
-                ",".join(meta.get("source_categories", [])),
+                ",".join(str(c) for c in _string_list(meta.get("source_categories"))),
             ])
     return out

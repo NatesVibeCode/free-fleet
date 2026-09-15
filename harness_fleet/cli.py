@@ -1123,26 +1123,31 @@ def cmd_partners(args: argparse.Namespace) -> None:
     output = Path(getattr(args, "output", None) or (
         "partners.csv" if args.partners_command == "find" else f"partner-{args.domain}.csv"
     ))
-    common = dict(
-        plan=plan,
-        backends=getattr(args, "backend", None) or None,
-        max_per_query=int(getattr(args, "max", 8) or 8),
-        delay=float(getattr(args, "delay", 1.0) or 0.0),
-        snippets_only=bool(getattr(args, "snippets_only", False)),
-    )
+    backends = getattr(args, "backend", None) or None
+    max_per_query = int(getattr(args, "max", 8) or 8)
+    delay = float(getattr(args, "delay", 1.0) or 0.0)
+    snippets_only = bool(getattr(args, "snippets_only", False))
     if args.partners_command == "find":
         items, report = find_partners(
+            plan=plan,
+            backends=backends,
+            max_per_query=max_per_query,
+            delay=delay,
+            snippets_only=snippets_only,
             tech=getattr(args, "tech", "") or "",
             vertical=getattr(args, "vertical", "") or "",
             subreddits=getattr(args, "subreddit", None) or [],
-            **common,
         )
     else:
         items, report = enrich_partner(
             args.domain,
+            plan=plan,
+            backends=backends,
+            max_per_query=max_per_query,
+            delay=delay,
+            snippets_only=snippets_only,
             max_pages=int(getattr(args, "max_pages", 8) or 8),
             include_fetch=not bool(getattr(args, "no_fetch", False)),
-            **common,
         )
     path = export_bundled_csv(items, output)
     payload = {"output": str(path), "partners": len(items), "report": report.as_dict()}

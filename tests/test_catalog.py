@@ -1,3 +1,5 @@
+import json
+
 import httpx
 import pytest
 
@@ -8,7 +10,6 @@ from harness_fleet.catalog import (
     classify_price_state,
 )
 from harness_fleet.models import RoutePolicy
-
 
 def test_catalog_ladder_rotation(tmp_path):
     cfg = tmp_path / "routes.json"
@@ -26,6 +27,57 @@ def test_catalog_ladder_rotation(tmp_path):
     l1 = cat.get_ladder(task_seed="seed_a", free_only=True)
     assert len(l1) == 3
     assert set(l1) == {"r1", "r2", "r3"}
+
+def _opencode_transcript(*entries: tuple[str, str]) -> str:
+    """A transcript shaped like `opencode models --verbose`."""
+    out = []
+    for model_id, provider in entries:
+        out.append(model_id)
+        out.append(json.dumps({
+            "id": model_id.split("/", 1)[1] if "/" in model_id else model_id,
+            "providerID": provider,
+            "status": "active",
+            "cost": {"input": 0, "output": 0},
+        }, indent=2))
+    return "\n".join(out) + "\n"
+
+
+def test_opencode_discovery_takes_the_models_that_say_free(tmp_path):
+    """The default install runs opencode free and openrouter free via opencode."""
+    from harness_fleet.providers.opencode import OPENCODE_SPEC
+
+    cat = RouteCatalog(config_path=tmp_path / "routes.json")
+    cat.data = {"revision": 1, "routes": []}
+    transcript = _opencode_transcript(
+        ("opencode/ling-3.0-flash-fin-free", "opencode"),
+        ("openrouter/inclusionai/ling-3.0-flash-fin:free", "openrouter"),
+        ("openrouter/nvidia/nemotron-3-ultra-550b-a55b:free", "openrouter"),
+        # Not free, or another vendor's endpoint: added deliberately, never
+        # discovered. A paid model in the default ladder is a surprise bill.
+        ("openrouter/google/lyria-3-clip-preview", "openrouter"),
+        ("fireworks-ai/accounts/fireworks/models/qwen3", "fireworks-ai"),
+        ("lmstudio/qwen/qwen3-30b-a3b-2507", "lmstudio"),
+    )
+    models = cat._parse_harness_discovery(OPENCODE_SPEC, transcript)
+    assert set(models) == {
+        "opencode/ling-3.0-flash-fin-free",
+        "opencode/openrouter/inclusionai/ling-3.0-flash-fin:free",
+        "opencode/openrouter/nvidia/nemotron-3-ultra-550b-a55b:free",
+    }
+    # The harness name is the fleet provider; the rest is the CLI's model arg.
+    assert models["opencode/openrouter/inclusionai/ling-3.0-flash-fin:free"]["providerID"] == "openrouter"
+
+
+def test_opencode_discovery_never_double_prefixes(tmp_path):
+    """A free opencode-native model keeps the fleet's single provider prefix."""
+    from harness_fleet.providers.opencode import OPENCODE_SPEC
+
+    cat = RouteCatalog(config_path=tmp_path / "routes.json")
+    models = cat._parse_harness_discovery(
+        OPENCODE_SPEC, _opencode_transcript(("opencode/mimo-v2.5-free", "opencode"))
+    )
+    assert list(models) == ["opencode/mimo-v2.5-free"]
+
 
 def test_circuit_breaker_on_nonzero_cost(tmp_path):
     cfg = tmp_path / "routes.json"

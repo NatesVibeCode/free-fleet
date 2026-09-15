@@ -68,6 +68,35 @@ def test_zero_attempt_limit_means_zero_attempts(tmp_path):
     assert stub.calls == 0
 
 
+def test_engine_passes_its_timeout_to_the_provider(tmp_path):
+    """A slow free route must be given the run's ceiling, not a hardcoded one."""
+    from harness_fleet.engine import DEFAULT_PROMPT_TIMEOUT_SEC, Engine
+    from harness_fleet.models import ProviderReceipt
+    from harness_fleet.store import HarnessStore
+    from harness_fleet.task import create_task_from_preset
+
+    seen = {}
+
+    class Recording:
+        def run_prompt(self, route_id, prompt, system_prompt=None, timeout_sec=None, **kwargs):
+            seen["timeout"] = timeout_sec
+            return False, None, ProviderReceipt(
+                id="receipt-1", provider="recording", requested_route=route_id,
+                status="failed", error="stop here",
+            )
+
+    store = HarnessStore(tmp_path / "t.db")
+    task = create_task_from_preset("t", preset_name="classify")
+    engine = Engine(task=task, store=store, prompt_timeout_sec=420)
+    engine.set_provider("recording", Recording())
+    engine.catalog.data = {"revision": 1, "routes": [
+        {"id": "recording/m", "provider": "recording", "enabled": True, "price_state": "price_observed_zero"},
+    ]}
+    engine.execute_batch(pack_items([{"item_id": "i1", "text": "supported source text"}])[0])
+    assert seen["timeout"] == 420
+    assert Engine(task=task, store=store).prompt_timeout_sec == DEFAULT_PROMPT_TIMEOUT_SEC
+
+
 def test_engine_rejects_extra_model_fields(tmp_path):
     payload = {
         "items": [{

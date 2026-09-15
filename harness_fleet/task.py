@@ -221,8 +221,9 @@ PRESETS: dict[str, dict[str, Any]] = {
                 "description": "The verified technical initiative or bottleneck, named exactly as the source names it.",
             },
             "fit_tier": {
+                "type": "string",
                 "enum": ["tier_1", "tier_2", "tier_3", "unfit"],
-                "description": "Score band, derived by the pipeline: tier_1 85-100, tier_2 70-84, tier_3 50-69, unfit below 50. Omit it.",
+                "description": "Score band the pipeline derives from the score: tier_1 85-100, tier_2 70-84, tier_3 50-69, unfit below 50. Never include it in your output.",
             },
             "reasoning": {
                 "type": "string",
@@ -232,7 +233,7 @@ PRESETS: dict[str, dict[str, Any]] = {
         "required": ["checklist", "identified_gap", "reasoning"],
     },
     "partner-research": {
-        "instructions": "Decide whether this implementation partner can generate revenue with us: answer the 10-question revenue checklist, name the verified practice, state how we would make money together, and cite verbatim evidence from the multi-source dossier. The pipeline computes the score and tier.",
+        "instructions": "Decide whether this implementation partner can generate revenue with us: answer the 10-question revenue checklist, name the verified practice, state how we would make money together, and cite verbatim evidence from the multi-source dossier. Return only item_id, claims and quotes: never send score, fit_tier or passed, because the pipeline derives all three and rejects any answer that carries them.",
         "checklist": PARTNER_CHECKLIST,
         "evidence_terms": PARTNER_EVIDENCE_TERMS,
         "recency_half_lives": PARTNER_HALF_LIVES,
@@ -337,8 +338,9 @@ PRESETS: dict[str, dict[str, Any]] = {
                 "description": "Number of distinct source categories (First-Party, Vendor Registry, Review Audit, Community, ATS) cited in the supporting quotes.",
             },
             "fit_tier": {
+                "type": "string",
                 "enum": ["tier_1", "tier_2", "tier_3", "unfit"],
-                "description": "Score band, derived by the pipeline: tier_1 85-100, tier_2 70-84, tier_3 50-69, unfit below 50. Omit it.",
+                "description": "Score band the pipeline derives from the score: tier_1 85-100, tier_2 70-84, tier_3 50-69, unfit below 50. Never include it in your output.",
             },
             "reasoning": {
                 "type": "string",

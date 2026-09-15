@@ -18,7 +18,7 @@ Start with `command -v harness-fleet`. On a fresh system, run `harness-fleet set
 - To benchmark routes against task samples before large runs, use `harness-fleet eval TASK --input FILE --concurrency 4` or MCP `harness_fleet_eval`.
 - For a zero-key proof in 30s, run `harness-fleet quickstart --demo` (deterministic `demo/fake` provider, no API keys).
 - For schema bootstrapping from labels, use `harness-fleet init NAME --from-example labels.csv [--label-column label]`.
-- For click-through routing, run `harness-fleet studio` (localhost-only UI: pick harnesses, models, per-step budgets, and paid opt-ins, and edit a task's scoring contract — checklist points, source weights, and half-lives — while score and fit tier stay pipeline-derived).
+- To choose which harnesses and models a run may use, start `harness-fleet studio` (localhost-only settings companion). It shows each harness's own login command, lists the models that harness reports in `free` or `specific` mode, and saves the selection to SQLite; `harness-fleet settings` prints it back. The page then shows the exact `run` command for that selection (`--from-studio`). It never handles credentials, never edits a scoring contract, and never starts a run.
 
 ## Invariants
 
@@ -48,3 +48,11 @@ Start with `command -v harness-fleet`. On a fresh system, run `harness-fleet set
 10. Export and validate the packet with `harness-fleet export RUN_ID [--format json|csv|jsonl] [--sort-by CLAIM] [--desc] [--top N] [--rank] [--filter CLAIMFILTER_JSON]`. Use `harness-fleet db backup <path>` for safe SQLite copies. Report database path, run ID, packet path, verified/failed counts, attempts, and route/cost evidence.
 
 Never call a worker session an independent coding-agent session. `--sessions` is bounded batch concurrency inside one harness-fleet campaign.
+
+## Related skills
+
+- `account-fleet` — turn an ICP into scored target accounts (`--preset account-research`).
+- `partner-fleet` — turn ecosystem requirements into scored implementation partners (`--preset partner-research`).
+- `career-fleet` — find and rank employers and job postings; ships with the career-fleet distribution.
+
+Setup installs these next to this skill in `.agents/skills/`. Read them when the job is domain research rather than raw bulk extraction, classification, or scoring of your own text.

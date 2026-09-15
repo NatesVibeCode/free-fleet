@@ -4,11 +4,36 @@
 [![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
 [![Python 3.10+](https://img.shields.io/badge/python-3.10%2B-blue.svg)](pyproject.toml)
 
-> **Research and score target accounts with traceable source evidence. Quotes are checked against the source at exact character offsets. Scores and interpretations still need human review.**
+> **Run repeatable, evidence-grounded LLM batch jobs over free and local models. Every claim is typed, and every quote is checked against the source at exact character offsets. Scores and interpretations still need human review.**
 
-Local outbound intelligence engine for high-throughput, evidence-grounded account research across free, paid, and local LLMs — with SQLite checkpointing, 4-layer compounding funnels, and deterministic quote verification.
+`harness-fleet` is the engine of the family: bulk classification, extraction, summarization, and scoring over your own text, with SQLite checkpointing, bounded attempts, compounding filter funnels, and explicit route-price evidence. It also ships the assistant skills for every fleet product, so one install gives your AI client the account, partner, and career playbooks too.
 
 *Canonical CLI is `harness-fleet`. The account-fleet and career-fleet distributions ship their own entry points from their own checkouts — install one fleet per environment.*
+
+**New here?** [One-click install](#one-click-install) → [60-second demo](#quickstart--60-second-demo-no-api-keys) → [which fleet do I want?](#which-fleet-do-i-want)
+
+## Which fleet do I want?
+
+Every distribution shares one engine — typed claims, SQLite checkpoints, and character-exact quote verification — and ships the assistant skills below. Install one per environment.
+
+| If you want to… | Install | CLI | Skill that drives it |
+| --- | --- | --- | --- |
+| Score, classify, extract, or triage **your own** text at volume | **harness-fleet** ← you are here | `harness-fleet` | `harness-fleet` |
+| Turn an ICP into **scored target accounts** | [account-fleet](https://github.com/NatesVibeCode/account-fleet) | `account-fleet` | `account-fleet` |
+| Find and rank **employers and job postings** | [career-fleet](https://github.com/NatesVibeCode/career-fleet) | `career-fleet` | `career-fleet` |
+| Find **implementation partners and SIs** | harness-fleet, preset `partner-research` | `harness-fleet` | `partner-fleet` |
+
+Skills are installed into your workspace by `harness-fleet setup` — see [Assistant skills](#assistant-skills-what-installs-where).
+
+## Contents
+
+- [Which fleet do I want?](#which-fleet-do-i-want)
+- [One-click install](#one-click-install) · [Quickstart — 60-second demo](#quickstart--60-second-demo-no-api-keys)
+- [30-Second Example: raw accounts in → scored, grounded CSV out](#30-second-example-raw-accounts-in--scored-grounded-csv-out)
+- [Why you can trust the output](#why-you-can-trust-the-output) · [Core capabilities](#core-capabilities) · [Source quality](#source-quality)
+- [SQLite control plane](#sqlite-control-plane) · [Commands](#commands) · [Assistant skills](#assistant-skills-what-installs-where)
+- [MCP server](#mcp-server) · [Harness studio (local UI)](#harness-studio-local-ui)
+- [Migrating from free-fleet](#migrating-from-free-fleet) · [Verification & testing](#verification--testing)
 
 ## Migrating from free-fleet
 
@@ -63,7 +88,7 @@ rank,item_id,score,identified_gap,fit_tier,primary_quote_text
 1,stripe.com,92,"Legacy billing migration",tier_1,"lead migration off legacy v1 billing pipeline to Kafka"
 ```
 
-Illustrative values only; real exports also include source URLs, digests, and quote details. Set your ICP and scoring rubric in the task's `TaskSpec` — a preset plus a task JSON file, or the studio's scoring panel. An exact source quote proves the text exists, not that a company will buy your product.
+Illustrative values only; real exports also include source URLs, digests, and quote details. Set your ICP and scoring rubric in the task's `TaskSpec` — a preset plus a task JSON file, edited by hand or by your AI client using the bundled skill. An exact source quote proves the text exists, not that a company will buy your product.
 
 ---
 
@@ -175,6 +200,24 @@ harness-fleet test score-demo --input input.jsonl
 ```
 
 ---
+
+## Examples
+
+Runnable starting points live in [`examples/`](examples/) — each folder has a `README.md`, a typed `task.json`, and sample input you can feed straight to `run`:
+
+| Example | Preset | Sample input |
+| --- | --- | --- |
+| [`examples/account_research/`](examples/account_research/) | `account-research` | `sample_accounts.csv` |
+| [`examples/partner_research/`](examples/partner_research/) | `partner-research` | `sample_partners.csv`, `sample_partners_multisource.csv` |
+| [`examples/saas_intelligence/`](examples/saas_intelligence/) | `score` | `sample_data.jsonl` |
+| [`examples/security_cve_triage/`](examples/security_cve_triage/) | `triage` | `sample_data.jsonl` |
+
+```bash
+harness-fleet init my-task --preset partner-research --db ./harness-fleet.db
+harness-fleet validate my-task --db ./harness-fleet.db \
+  --input examples/partner_research/sample_partners.csv \
+  --id-column domain --text-column research --json
+```
 
 ## Core Capabilities
 
@@ -368,20 +411,26 @@ Free routes are used by default. A paid route approved in an earlier session mus
 | `cooldowns` | Inspect active rate-limit route cooldowns or clear them (`--clear`, `--route`) |
 | `tasks` | List registered task definitions |
 | `init` | Create a typed task from a preset (`score`, `filter`, `account-research`, `triage`, `classify`, `extract`, `summarize`) |
+| `profile` | Manage the typed Ideal Company Profile (`--init`, `--path`, `--force`) that research presets score against |
 | `init --from-example` | Infer a draft `claims_schema` from a labeled CSV (`--from-example labels.csv --label-column label`) |
 | `validate` | Check task schema and input formatting without inference (`--only-ids`) |
 | `test` | Run one real batch through candidate models |
 | `run` | Create and execute a SQLite-backed resumable run (`--only-ids` for compounding filter) |
 | `resume` | Resume an unfinished run from its SQLite queue |
+| `rescore` | Re-score an existing run's records against a new input round (`--input`, `--run-id`) |
+| `dag` | Run a multi-stage workflow from a DAG spec (`--spec`, `--dry-run`) instead of chaining CSV rounds |
 | `status` | Show real-time progress, attempts, and route stats (`--watch`, `--json`) |
 | `eval` | Benchmark routes on sample inputs and update route ranking priors (`--concurrency`) |
+| `calibrate` | Fit scoring points/weights/half-lives against labeled samples (`--apply` to register the revision) |
 | `sessions` | Inspect recorded worker sessions and audit logs |
+| `history` | Score trajectory for one entity across runs (`history ENTITY`) |
 | `export` | Export a validated packet (`--format json\|csv\|jsonl`, `--sort-by`, `--desc`, `--top`, `--rank`, `--filter`) |
 | `db backup` | SQLite backup to file (safe while running) |
 | `schema` | Print admitted JSON Schemas or database contracts |
-| `mcp install` | One-command Claude/Cursor setup (auto-wires `claude_desktop_config.json` / `mcp.json`) |
+| `mcp install` | One-command Claude/Cursor setup (auto-wires `claude_desktop_config.json` / `mcp.json`; `--env NAME` copies a shell variable, e.g. `OPENROUTER_API_KEY`, into the client config) |
 | `serve` | Run the Model Context Protocol (MCP) server over stdio |
-| `studio` | Serve the localhost studio UI (scoring contract, harnesses, models, sequenced runs) |
+| `settings` | Print, or `--clear`, the harness/model selection the studio saved (`run --from-studio` uses it) |
+| `studio` | Serve the localhost settings companion (pick harnesses and models; saves the selection to SQLite) |
 | `discover` | Broad web search (`ddgs`, self-hosted SearXNG, HN Algolia, YC, Reddit, Stack Exchange, Discourse, Lobsters, Lemmy, Dev.to) to an accounts file |
 | `fetch` | Fetch URLs, sitemaps, site crawls, ATS boards (Greenhouse/Ashby/Lever), YC profiles, HN/Reddit threads, or Q&A forums to an accounts file |
 
@@ -389,6 +438,22 @@ Pass `--json` to any command for machine-readable JSON output. `--free-only` is 
 
 
 ---
+
+## Assistant skills (what installs where)
+
+Skills are the playbooks your AI client reads to drive this CLI. `harness-fleet setup` installs every skill this distribution bundles into `<workspace>/.agents/skills/`, so a connected assistant finds them without you copying anything:
+
+| Skill | Installed as | Drives |
+| --- | --- | --- |
+| `harness-fleet` | `.agents/skills/harness-fleet/` | This CLI: task contracts, runs, export, MCP, troubleshooting |
+| `account-fleet` | `.agents/skills/account-fleet/` | `--preset account-research`: an ICP in, scored target accounts out |
+| `partner-fleet` | `.agents/skills/partner-fleet/` | `--preset partner-research`: ecosystem requirements in, scored implementation partners out |
+
+Every skill is plain markdown with a `SKILL.md` plus a `references/` folder (`operations.md`, `task-contracts.md`, discovery playbooks, scoring-rubric guides, MCP recipes). Read them straight from this repo under `skills/`, or preview what setup would install:
+
+```bash
+harness-fleet setup --workspace-root "$PWD" --dry-run --json
+```
 
 ## MCP Server
 

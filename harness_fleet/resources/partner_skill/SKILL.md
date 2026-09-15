@@ -206,3 +206,11 @@ harness-fleet export campaign-partners-01 \
 | #2 | `cloud_solutions.io` | 90 | Real-Time Kafka Streaming Deployment | “our client delivery team architects mission-critical Apache Kafka clusters for fintech customers” | `https://jobs.ashbyhq.com/cloud_solutions/lead-architect` |
 
 See [references/mcp-recipes.md](references/mcp-recipes.md) for interactive prompt recipes.
+
+## Related skills
+
+- `account-fleet` — the same research shape for target accounts (`--preset account-research`).
+- `harness-fleet` — the shared engine underneath this playbook: task contracts, runs, export, MCP, troubleshooting.
+- `career-fleet` — employer and job-post screening; ships with the career-fleet distribution.
+
+Setup installs these next to this skill in `.agents/skills/`.

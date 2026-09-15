@@ -25,11 +25,14 @@ def _checklist_property(items: dict[str, int], descriptions: dict[str, str]) -> 
 
 
 def _computed_score_property(description: str) -> dict[str, Any]:
+    # The wording matters: a free model that reads a friendly description here
+    # tries to answer the field itself, and a supplied score is rejected when it
+    # disagrees with the checklist. Say "never send this" first.
     return {
         "type": "integer",
         "minimum": 0,
         "maximum": 100,
-        "description": f"Computed by the pipeline from the checklist; omit it. {description}",
+        "description": f"NEVER include this field in your output: the pipeline computes it from the checklist. {description}",
     }
 
 
@@ -223,7 +226,7 @@ PRESETS: dict[str, dict[str, Any]] = {
             "fit_tier": {
                 "type": "string",
                 "enum": ["tier_1", "tier_2", "tier_3", "unfit"],
-                "description": "Score band the pipeline derives from the score: tier_1 85-100, tier_2 70-84, tier_3 50-69, unfit below 50. Never include it in your output.",
+                "description": "NEVER include this field in your output: the pipeline derives the band from the score. tier_1 85-100, tier_2 70-84, tier_3 50-69, unfit below 50.",
             },
             "reasoning": {
                 "type": "string",
@@ -340,7 +343,7 @@ PRESETS: dict[str, dict[str, Any]] = {
             "fit_tier": {
                 "type": "string",
                 "enum": ["tier_1", "tier_2", "tier_3", "unfit"],
-                "description": "Score band the pipeline derives from the score: tier_1 85-100, tier_2 70-84, tier_3 50-69, unfit below 50. Never include it in your output.",
+                "description": "NEVER include this field in your output: the pipeline derives the band from the score. tier_1 85-100, tier_2 70-84, tier_3 50-69, unfit below 50.",
             },
             "reasoning": {
                 "type": "string",

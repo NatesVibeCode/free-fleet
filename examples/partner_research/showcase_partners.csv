@@ -1,5 +1,8 @@
 item_id,text,source_uri,source_count,source_categories
 trace3.com,"# Multi-Source Evidence Dossier: trace3.com
+# source_count: 7
+# source_categories: ats_requisitions,first_party_practice,general_web
+
 
 === SECTION: FIRST_PARTY_PRACTICE (URI: https://www.trace3.com/) ===
 Trace3 empowers financial institutions with cutting-edge technology solutions tailored to their unique needs. With over 20 years of expertise and a team of 100+ skilled engineers, we provide comprehensive services, including managed IT, staff augmentation, project execution, product management, and reselling. Our deep industry knowledge spans banking, credit unions, insurance, and investment firms, ensuring that we deliver right-sized innovations that enhance efficiency, accelerate time-to-market, and drive competitive advantage. At Trace3, we are committed to delivering technology-driven strategies that help financial organizations navigate complexity, mitigate risk, and achieve sustainable growth in an evolving digital landscape.
@@ -346,6 +349,9 @@ Prosek Partners
 
 pro-americansecurities@prosek.com",https://www.trace3.com/,7,"ats_requisitions,first_party_practice,general_web"
 slalom.com,"# Multi-Source Evidence Dossier: slalom.com
+# source_count: 10
+# source_categories: ats_requisitions,community_and_social,first_party_case_study,first_party_practice,general_web
+
 
 === SECTION: FIRST_PARTY_PRACTICE (URI: https://www.slalom.com/us/en) ===
 From AI strategy to implementation solutions, Slalom helps businesses unlock the full potential of AI—driving innovation, efficiency, and measurable results.
@@ -615,6 +621,9 @@ Shared vision. Shared commitment: Partnering to bring innovation to government
 
 At Slalom, we believe in the power of partnership. Our approach is built on understanding your unique vision and goals, and working collaboratively to achieve them. We don't just deliver solutions; we build lasting relationships based on trust, empathy, and mutual success. Our team is dedicated to being your trusted co-pilot, respectful challenger, and unwavering champion, ensuring that every engagement leaves your organization stronger and more capable. With our deep industry expertise, values-driven culture, and commitment to your long-term success, we bring more to every partnership.",https://www.slalom.com/us/en,10,"ats_requisitions,community_and_social,first_party_case_study,first_party_practice,general_web"
 excella.com,"# Multi-Source Evidence Dossier: excella.com
+# source_count: 14
+# source_categories: ats_requisitions,community_and_social,first_party_practice,general_web
+
 
 === SECTION: ATS_REQUISITIONS (URI: https://jobs.ashbyhq.com/excella) ===
 Jobs
@@ -934,6 +943,9 @@ here
 
 . Plans start at $295 annually.",https://jobs.ashbyhq.com/excella,14,"ats_requisitions,community_and_social,first_party_practice,general_web"
 thoughtworks.com,"# Multi-Source Evidence Dossier: thoughtworks.com
+# source_count: 14
+# source_categories: ats_requisitions,community_and_social,first_party_case_study,first_party_practice,general_web
+
 
 === SECTION: FIRST_PARTY_PRACTICE (URI: https://www.thoughtworks.com/) ===
 Meet Thoughtworks'
@@ -2164,6 +2176,9 @@ built on engineering foundations
 
 We work with leading cloud, data and compute APIs, including AWS, Google Cloud, Microsoft Azure, Databricks and Snowflake. Through a collaboration with Mechanical Orchard, we support deep mainframe renewal.",https://www.thoughtworks.com/,14,"ats_requisitions,community_and_social,first_party_case_study,first_party_practice,general_web"
 onixnet.com,"# Multi-Source Evidence Dossier: onixnet.com
+# source_count: 7
+# source_categories: ats_requisitions,first_party_practice
+
 
 === SECTION: FIRST_PARTY_PRACTICE (URI: https://www.onixnet.com/) ===
 Migrate data  to the cloud, transform data into actionable insights, and drive smarter business decisions.

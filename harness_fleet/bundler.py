@@ -193,8 +193,15 @@ def bundle_records(
         if len(categories) < min_categories:
             continue
 
-        # Format composite document
-        sections: list[str] = [f"# Multi-Source Evidence Dossier: {entity_id}\n"]
+        # Format composite document. The header carries the provenance the
+        # scoring task needs to answer for itself (how many sources, which
+        # categories) instead of making the model guess from section names.
+        sections: list[str] = [
+            f"# Multi-Source Evidence Dossier: {entity_id}",
+            f"# source_count: {len(hits)}",
+            f"# source_categories: {','.join(categories) if categories else 'unknown'}",
+            "",
+        ]
         all_uris: list[str] = []
 
         for i, hit in enumerate(hits, 1):

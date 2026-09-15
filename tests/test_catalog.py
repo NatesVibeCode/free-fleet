@@ -11,6 +11,7 @@ from harness_fleet.catalog import (
 )
 from harness_fleet.models import RoutePolicy
 
+
 def test_catalog_ladder_rotation(tmp_path):
     cfg = tmp_path / "routes.json"
     cat = RouteCatalog(config_path=cfg)

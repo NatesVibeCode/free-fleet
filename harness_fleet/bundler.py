@@ -14,7 +14,7 @@ from pathlib import Path
 from typing import Any
 from urllib.parse import urlparse
 
-from .models import InputItem, JsonValue
+from .models import InputItem
 
 # Known directory & platform domains mapped to source categories
 REGISTRY_DOMAINS = (

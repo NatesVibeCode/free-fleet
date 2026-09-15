@@ -209,8 +209,7 @@ See [references/mcp-recipes.md](references/mcp-recipes.md) for interactive promp
 
 ## Related skills
 
-- `account-fleet` — the same research shape for target accounts (`--preset account-research`).
-- `harness-fleet` — the shared engine underneath this playbook: task contracts, runs, export, MCP, troubleshooting.
-- `career-fleet` — employer and job-post screening; ships with the career-fleet distribution.
+- `harness-fleet` — the shared engine underneath every fleet playbook: task contracts, runs, export, MCP, troubleshooting.
+- `account-fleet` — turn an ICP into scored target accounts (`--preset account-research`).
 
 Setup installs these next to this skill in `.agents/skills/`.

@@ -202,8 +202,7 @@ See [references/mcp-recipes.md](references/mcp-recipes.md) for prompt recipes in
 
 ## Related skills
 
-- `harness-fleet` — the shared engine underneath this playbook: task contracts, runs, export, MCP, troubleshooting.
-- `partner-fleet` — the same research shape for implementation partners (`--preset partner-research`), when this distribution bundles it.
-- `career-fleet` — employer and job-post screening; ships with the career-fleet distribution.
+- `harness-fleet` — the shared engine underneath every fleet playbook: task contracts, runs, export, MCP, troubleshooting.
+- `partner-fleet` — turn ecosystem requirements into scored implementation partners (`--preset partner-research`).
 
 Setup installs these next to this skill in `.agents/skills/`.

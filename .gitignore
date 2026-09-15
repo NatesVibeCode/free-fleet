@@ -45,3 +45,6 @@ generate_carousel.py
 # Local install leftovers (installer backups, generated task samples)
 *.db.bak*
 *.sample.jsonl
+
+# Local scratch: regenerable tool output, never shipped.
+.scratch/

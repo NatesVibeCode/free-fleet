@@ -1,0 +1,366 @@
+{
+  "schema_version": 1,
+  "diagram_type": "architecture",
+  "meta": {
+    "title": "harness-fleet Architecture",
+    "locale": "en",
+    "output": "harness-architecture.html",
+    "quality_profile": "showcase",
+    "repository": {
+      "url": "https://github.com/NatesVibeCode/harness-fleet",
+      "provider": "github",
+      "link_mode": "web",
+      "revision": "1835d5820e832c94df6f70a27818cda89625a9a7"
+    },
+    "views": [
+      {
+        "id": "ingest-to-queue",
+        "label": "Ingest to queue",
+        "focus": [
+          "sources",
+          "taskspec",
+          "packer",
+          "store"
+        ],
+        "note": "Source rows and a typed task are packed into bounded, resumable batches."
+      },
+      {
+        "id": "route-selection",
+        "label": "Route selection",
+        "focus": [
+          "store",
+          "policy",
+          "scorer",
+          "engine",
+          "routes"
+        ],
+        "note": "Policy admits candidate routes, Bayesian priors rank them, the engine dispatches."
+      },
+      {
+        "id": "trust-boundary",
+        "label": "Verification and commit",
+        "focus": [
+          "routes",
+          "gate",
+          "ledger",
+          "store"
+        ],
+        "note": "Nothing reaches the packet until grounding, schema, and price checks pass."
+      }
+    ]
+  },
+  "components": [
+    {
+      "id": "sources",
+      "type": "external",
+      "label": "Source Data",
+      "sublabel": "CSV · JSONL · discovered accounts",
+      "pos": [
+        80,
+        40
+      ],
+      "size": [
+        200,
+        76
+      ]
+    },
+    {
+      "id": "taskspec",
+      "type": "backend",
+      "label": "TaskSpec",
+      "sublabel": "closed schema + evidence checklist",
+      "pos": [
+        360,
+        40
+      ],
+      "size": [
+        200,
+        76
+      ]
+    },
+    {
+      "id": "packer",
+      "type": "backend",
+      "label": "Slicer & Batch Packer",
+      "sublabel": "bounded batches · ID-only chaining",
+      "pos": [
+        640,
+        40
+      ],
+      "size": [
+        200,
+        76
+      ],
+      "sources": [
+        {
+          "path": "harness_fleet/packer.py",
+          "line": 55,
+          "label": "pack_items"
+        }
+      ]
+    },
+    {
+      "id": "store",
+      "type": "database",
+      "label": "SQLite Control Plane",
+      "sublabel": "WAL queue · atomic leases",
+      "tag": "resumable",
+      "pos": [
+        920,
+        262
+      ],
+      "size": [
+        210,
+        84
+      ],
+      "sources": [
+        {
+          "path": "harness_fleet/store.py",
+          "line": 188,
+          "label": "HarnessStore"
+        }
+      ]
+    },
+    {
+      "id": "surfaces",
+      "type": "frontend",
+      "label": "Operator Surfaces",
+      "sublabel": "CLI · Studio · MCP server",
+      "pos": [
+        920,
+        40
+      ],
+      "size": [
+        200,
+        76
+      ],
+      "sources": [
+        {
+          "path": "harness_fleet/mcp_server.py",
+          "line": 63,
+          "label": "create_mcp_server"
+        }
+      ]
+    },
+    {
+      "id": "policy",
+      "type": "security",
+      "label": "Policy Gate",
+      "sublabel": "cost ceilings · ZDR · route rules",
+      "pos": [
+        640,
+        262
+      ],
+      "size": [
+        200,
+        76
+      ]
+    },
+    {
+      "id": "scorer",
+      "type": "backend",
+      "label": "Bayesian Route Scorer",
+      "sublabel": "verification rate · latency",
+      "pos": [
+        360,
+        262
+      ],
+      "size": [
+        200,
+        76
+      ],
+      "sources": [
+        {
+          "path": "harness_fleet/scoring.py",
+          "line": 54,
+          "label": "RouteScorer"
+        }
+      ]
+    },
+    {
+      "id": "engine",
+      "type": "backend",
+      "label": "Engine / Worker Pool",
+      "sublabel": "resumable concurrent batches",
+      "pos": [
+        80,
+        262
+      ],
+      "size": [
+        200,
+        76
+      ],
+      "sources": [
+        {
+          "path": "harness_fleet/engine.py",
+          "line": 74,
+          "label": "Engine"
+        }
+      ]
+    },
+    {
+      "id": "routes",
+      "type": "external",
+      "label": "Model Routes",
+      "sublabel": "Ollama · OpenRouter :free · Groq",
+      "pos": [
+        80,
+        484
+      ],
+      "size": [
+        200,
+        84
+      ]
+    },
+    {
+      "id": "gate",
+      "type": "security",
+      "label": "Deterministic Gate",
+      "sublabel": "grounding · closed schema · price",
+      "tag": "fail closed",
+      "pos": [
+        360,
+        484
+      ],
+      "size": [
+        200,
+        84
+      ],
+      "sources": [
+        {
+          "path": "harness_fleet/grounding.py",
+          "line": 360,
+          "label": "verify_grounding"
+        }
+      ]
+    },
+    {
+      "id": "ledger",
+      "type": "database",
+      "label": "Verified Packet",
+      "sublabel": "packet.json + attempts ledger",
+      "pos": [
+        640,
+        484
+      ],
+      "size": [
+        210,
+        84
+      ]
+    }
+  ],
+  "boundaries": [
+    {
+      "kind": "security-group",
+      "label": "Deterministic trust boundary",
+      "wraps": [
+        "gate",
+        "ledger"
+      ]
+    }
+  ],
+  "connections": [
+    {
+      "id": "sources-to-taskspec",
+      "from": "sources",
+      "to": "taskspec",
+      "label": "raw records"
+    },
+    {
+      "id": "taskspec-to-packer",
+      "from": "taskspec",
+      "to": "packer",
+      "label": "typed task"
+    },
+    {
+      "id": "packer-to-store",
+      "from": "packer",
+      "to": "store",
+      "label": "enqueue batches",
+      "fromSide": "bottom",
+      "toSide": "top",
+      "labelDy": -14
+    },
+    {
+      "id": "surfaces-to-store",
+      "from": "surfaces",
+      "to": "store",
+      "label": "author tasks",
+      "fromSide": "bottom",
+      "toSide": "top",
+      "labelDy": 30
+    },
+    {
+      "id": "store-to-policy",
+      "from": "store",
+      "to": "policy",
+      "label": "lease batch"
+    },
+    {
+      "id": "policy-to-scorer",
+      "from": "policy",
+      "to": "scorer",
+      "label": "admitted routes"
+    },
+    {
+      "id": "scorer-to-engine",
+      "from": "scorer",
+      "to": "engine",
+      "label": "best lane"
+    },
+    {
+      "id": "engine-to-routes",
+      "from": "engine",
+      "to": "routes",
+      "label": "dispatch batch",
+      "labelDy": 40
+    },
+    {
+      "id": "routes-to-gate",
+      "from": "routes",
+      "to": "gate",
+      "label": "raw output"
+    },
+    {
+      "id": "gate-to-ledger",
+      "from": "gate",
+      "to": "ledger",
+      "label": "verified commit",
+      "variant": "emphasis"
+    },
+    {
+      "id": "gate-to-scorer",
+      "from": "gate",
+      "to": "scorer",
+      "label": "demote route",
+      "variant": "dashed",
+      "labelDy": -40
+    }
+  ],
+  "cards": [
+    {
+      "dot": "emerald",
+      "title": "Resumable control plane",
+      "items": [
+        "SQLite WAL queue with BEGIN IMMEDIATE atomic leases",
+        "Every attempt, cost, and failure recorded immutably"
+      ]
+    },
+    {
+      "dot": "violet",
+      "title": "Route selection",
+      "items": [
+        "Free routes run by default; paid routes need an explicit opt-in",
+        "Bayesian priors rank routes; 429s cool down with zero attempt burn"
+      ]
+    },
+    {
+      "dot": "rose",
+      "title": "Deterministic trust boundary",
+      "items": [
+        "Quotes matched to the source at exact character offsets",
+        "Closed schemas and a zero-price circuit breaker fail closed"
+      ]
+    }
+  ]
+}

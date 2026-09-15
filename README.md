@@ -6,11 +6,20 @@
 
 > **Run repeatable, evidence-grounded LLM batch jobs over free and local models. Every claim is typed, and every quote is checked against the source at exact character offsets. Scores and interpretations still need human review.**
 
-`harness-fleet` is the engine of the family: bulk classification, extraction, summarization, and scoring over your own text, with SQLite checkpointing, bounded attempts, compounding filter funnels, and explicit route-price evidence. It also ships the assistant skills for every fleet product, so one install gives your AI client the account, partner, and career playbooks too.
+Harness Fleet turns a pile of text into answers you can check. You describe the job — *score these accounts*, *pull the pricing out of these pages*, *flag the ones that matter* — and it returns a typed result for every record with the exact sentence it relied on. It runs on free or local AI models by default, keeps all state in a local file, and ships the assistant playbooks for every fleet product, so one install gives your AI client the account, partner, and career skills too.
 
 *Canonical CLI is `harness-fleet`. The account-fleet and career-fleet distributions ship their own entry points from their own checkouts — install one fleet per environment.*
 
 **New here?** [One-click install](#one-click-install) → [60-second demo](#quickstart--60-second-demo-no-api-keys) → [which fleet do I want?](#which-fleet-do-i-want)
+
+## Start here (no coding needed)
+
+1. **Install.** macOS/Linux: `./install.sh` · Windows: `powershell -ExecutionPolicy Bypass -File install.ps1`
+   It makes its own private Python environment, sets up a workspace, and connects Claude Desktop or Cursor for you.
+2. **Watch it work.** The installer finishes by scoring a set of example records with a built-in fake model — no accounts, no API keys, no cost — and tells you where the results landed.
+3. **Ask your assistant.** Restart Claude Desktop (or Cursor) and describe the job in plain words, e.g. *"score these 200 accounts and show me the strongest 25 with quotes."* The bundled skill picks the right commands.
+
+Rather click than type? `harness-fleet studio` opens a local page for choosing which AI tools and models your runs are allowed to use.
 
 ## Which fleet do I want?
 

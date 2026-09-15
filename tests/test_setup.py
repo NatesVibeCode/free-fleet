@@ -29,6 +29,10 @@ def test_setup_installs_bundled_skill_and_database_idempotently(tmp_path):
     assert HarnessStore(first.database).schema_version() == "5"
     assert Path(first.stdio_server.command).stem in {"harness-fleet", "account-fleet", "career-fleet", "career-lanes"}
     assert Path(first.skill_path).with_name("account-fleet").joinpath("SKILL.md").is_file()
+    # The partner skill ships with the partner-research preset, so setup must
+    # install it too; leaving it behind made the preset unusable from a fresh
+    # workspace.
+    assert Path(first.skill_path).with_name("partner-fleet").joinpath("SKILL.md").is_file()
     assert first.database in first.stdio_server.args
     assert first.ready is False  # packaged route hints are not fresh price evidence
 
@@ -129,6 +133,28 @@ def test_all_distributed_skill_copies_match():
     for root in [repository / "skills/harness-fleet", repository / ".agents/skills/harness-fleet"]:
         actual = {path.relative_to(root): path.read_bytes() for path in root.rglob("*") if path.is_file()}
         assert actual == expected
+
+
+def test_partner_skill_is_bundled_and_every_copy_matches():
+    repository = Path(__file__).resolve().parents[1]
+    resources = repository / "harness_fleet/resources"
+    packaged = resources / "partner_skill"
+    expected = {p.relative_to(packaged): p.read_bytes() for p in packaged.rglob("*") if p.is_file()}
+    assert Path("SKILL.md") in expected, "the partner skill must ship a SKILL.md"
+    assert Path("references/discovery-playbook.md") in expected
+    for root in [repository / "skills/partner-fleet", repository / ".agents/skills/partner-fleet"]:
+        assert {p.relative_to(root): p.read_bytes() for p in root.rglob("*") if p.is_file()} == expected
+
+
+def test_partner_skill_files_are_declared_as_package_data():
+    """A skill that is not in package-data is missing from the built wheel."""
+    import tomllib
+
+    repository = Path(__file__).resolve().parents[1]
+    config = tomllib.loads((repository / "pyproject.toml").read_text(encoding="utf-8"))
+    declared = config["tool"]["setuptools"]["package-data"]["harness_fleet"]
+    assert any(pattern.startswith("resources/partner_skill/") for pattern in declared)
+    assert any(pattern.startswith("resources/account_skill/") for pattern in declared)
 
 
 def test_account_skill_and_examples_are_bundled():

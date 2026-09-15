@@ -88,6 +88,27 @@ def test_payload_is_schema_driven_and_never_invents_scores(tmp_path):
         assert partner["provenance"]["cost"] == 0.0
 
 
+def test_nested_facet_values_read_as_text_not_json():
+    from harness_fleet.board import _counter
+
+    counts = _counter([
+        {"min_project_size": "", "hourly_rate": "", "employees": "100+ engineers"},
+        {"min_project_size": "", "hourly_rate": "", "employees": ""},
+        {"min_project_size": "", "hourly_rate": "", "employees": "100+ engineers"},
+    ])
+    # Stated parts only, no raw JSON, and an all-blank object is not a value.
+    assert counts == {"employees: 100+ engineers": 2}
+
+
+def test_counter_keeps_plain_values_and_flags_booleans():
+    from harness_fleet.board import _counter
+
+    # A list value collapses to its stated parts, so it counts with the scalar.
+    assert _counter(["Kafka", "Kafka", "", None, ["Kafka"]]) == {"Kafka": 3}
+    assert _counter([[], "", None]) == {}
+    assert _counter([True, False, True]) == {"yes": 2, "no": 1}
+
+
 def test_payload_reports_quotes_and_provenance(tmp_path):
     db = _partner_run(tmp_path)
     payload = build_board_payload(db)

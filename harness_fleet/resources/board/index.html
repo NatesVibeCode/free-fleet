@@ -301,7 +301,14 @@
   function fmtValue(v) {
     if (v === null || v === undefined || v === "") return "—";
     if (Array.isArray(v)) return v.join(" · ");
-    if (isPlainObject(v)) return Object.keys(v).map(function (k) { return k.replace(/_/g, " ") + ": " + fmtValue(v[k]); }).join(" · ");
+    if (isPlainObject(v)) {
+      // Nested objects show only the parts the source actually stated.
+      var parts = Object.keys(v)
+        .filter(function (k) { return !isEmptyValue(v[k]); })
+        .map(function (k) { return k.replace(/_/g, " ") + ": " + fmtValue(v[k]); });
+      return parts.length ? parts.join(" · ") : "—";
+    }
+    if (typeof v === "boolean") return v ? "yes" : "no";
     return String(v);
   }
   function dashText(v) {
@@ -697,6 +704,7 @@
         var facet = p.facets[a.key] || {};
         var values = Object.keys(facet).sort(function (x, y) { return facet[y] - facet[x]; });
         var filled = (p.partners || []).filter(function (x) { return !isEmptyValue((x.answers || {})[a.key]); }).length;
+        var fillText = filled + "/" + p.stats.records + (filled ? "" : " — nothing stated");
         return el("div", { class:"list-row" }, [
           el("div", { class:"list-label" }, [
             el("div", { class:"t", text:a.label }),
@@ -707,7 +715,7 @@
                 }))
               : el("div", { class:"empty-value", style:"margin-top:6px", text:"no value in any source" })
           ]),
-          el("div", { class:"list-metric", text:filled + "/" + p.stats.records }),
+          el("div", { class:"list-metric", style: filled ? "" : "color:var(--muted);font-weight:550", text:fillText }),
           el("div", { class:"list-metric", style:"color:var(--muted)", text:values.length + " val" })
         ]);
       }))

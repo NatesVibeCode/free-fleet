@@ -41,3 +41,7 @@ generate_carousel.py
 *.sha256
 *.jpg
 .worktrees/
+
+# Local install leftovers (installer backups, generated task samples)
+*.db.bak*
+*.sample.jsonl

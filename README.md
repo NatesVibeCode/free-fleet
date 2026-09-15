@@ -84,6 +84,34 @@ Every output row is gated through deterministic checks *before* it is committed 
 
 ---
 
+## One-click install
+
+From a fresh checkout, one command sets up everything — no virtual environments or pip to
+worry about.
+
+macOS / Linux:
+
+```bash
+./install.sh
+```
+
+Windows (PowerShell):
+
+```powershell
+powershell -ExecutionPolicy Bypass -File install.ps1
+```
+
+That one command:
+
+- Creates a private Python 3.10+ environment (`.venv`) and installs `harness-fleet` into it.
+- Sets up a workspace at `~/harness-fleet-workspace` and runs the offline demo there.
+- Registers the `harness-fleet` MCP tools with Claude Desktop (or Cursor).
+
+Pass a different workspace folder if you want one, e.g. `./install.sh ~/my-harness-workspace`.
+Restart Claude Desktop (or Cursor) after it finishes.
+
+---
+
 ## Quickstart — 60-Second Demo (No API Keys)
 
 ```bash

@@ -16,6 +16,12 @@ Harness Fleet turns a pile of text into answers you can check. You describe the 
 
 1. **Install.** macOS/Linux: `./install.sh` · Windows: `powershell -ExecutionPolicy Bypass -File install.ps1`
    It makes its own private Python environment, sets up a workspace, and connects Claude Desktop or Cursor for you.
+
+   Prefer a terminal one-liner to the installer? This puts the CLI on your PATH without cloning anything:
+   ```bash
+   uv tool install "git+https://github.com/NatesVibeCode/harness-fleet"
+   # or, without uv:  python3 -m pip install "git+https://github.com/NatesVibeCode/harness-fleet"
+   ```
 2. **Watch it work.** The installer finishes by scoring a set of example records with a built-in fake model — no accounts, no API keys, no cost — and tells you where the results landed.
 3. **Get free model access** — about two minutes, no credit card needed: **[FREE-ACCESS.md](FREE-ACCESS.md)**. Until one of those is connected there is nothing for a real run to use.
 4. **Ask your assistant.** Restart Claude Desktop (or Cursor) and describe the job in plain words, e.g. *"score these 200 accounts and show me the strongest 25 with quotes."* The bundled skill picks the right commands.

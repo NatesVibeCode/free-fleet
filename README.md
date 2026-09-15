@@ -445,6 +445,7 @@ Free routes are used by default. A paid route approved in an earlier session mus
 | `schema` | Print admitted JSON Schemas or database contracts |
 | `mcp install` | One-command Claude/Cursor setup (auto-wires `claude_desktop_config.json` / `mcp.json`; `--env NAME` copies a shell variable, e.g. `OPENROUTER_API_KEY`, into the client config) |
 | `serve` | Run the Model Context Protocol (MCP) server over stdio |
+| `board` | Serve the read-only results board for a run: every attribute, the checklist behind each score, verbatim quotes, and provenance (`--run-id`, `--port`, `--open`, `--json`) |
 | `settings` | Print, or `--clear`, the harness/model selection the studio saved (`run --from-studio` uses it) |
 | `studio` | Serve the localhost settings companion (pick harnesses and models; saves the selection to SQLite) |
 | `discover` | Broad web search (`ddgs`, self-hosted SearXNG, HN Algolia, YC, Reddit, Stack Exchange, Discourse, Lobsters, Lemmy, Dev.to) to an accounts file |

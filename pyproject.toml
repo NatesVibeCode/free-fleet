@@ -70,6 +70,7 @@ harness_fleet = [
     "resources/examples/account_research/*.json",
     "resources/examples/account_research/*.csv",
     "resources/studio/*.html",
+    "resources/board/*.html",
 ]
 
 [tool.setuptools.data-files]

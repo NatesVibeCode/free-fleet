@@ -75,6 +75,94 @@ def test_mcp_install_preserves_invalid_existing_config(tmp_path, monkeypatch):
     assert config.read_text(encoding="utf-8") == "{broken config"
 
 
+def _install_args(tmp_path, *extra: str):
+    return build_parser().parse_args(
+        ["mcp", "install", "--client", "cursor", "--workspace-root", str(tmp_path),
+         "--db", "harness-fleet.db", *extra]
+    )
+
+
+def test_mcp_install_passes_requested_env_into_the_client_config(tmp_path, monkeypatch):
+    """Desktop apps do not inherit the shell environment, so --env must carry keys."""
+    config = tmp_path / "mcp.json"
+    monkeypatch.setattr("harness_fleet.cli._existing_mcp_path_for_client", lambda *a: config)
+    monkeypatch.setenv("OPENROUTER_API_KEY", "sk-or-test-not-real")
+    monkeypatch.setenv("GROQ_API_KEY", "gsk-test-not-real")
+    monkeypatch.setenv("OLLAMA_BASE_URL", "http://127.0.0.1:11434/v1")
+
+    cmd_mcp_install(_install_args(
+        tmp_path, "--env", "OPENROUTER_API_KEY,GROQ_API_KEY", "--env", "OLLAMA_BASE_URL", "--json",
+    ))
+
+    entry = json.loads(config.read_text(encoding="utf-8"))["mcpServers"]["harness-fleet"]
+    assert entry["env"] == {
+        "OPENROUTER_API_KEY": "sk-or-test-not-real",
+        "GROQ_API_KEY": "gsk-test-not-real",
+        "OLLAMA_BASE_URL": "http://127.0.0.1:11434/v1",
+    }
+
+
+def test_mcp_install_skips_unset_env_but_still_installs(tmp_path, monkeypatch, capsys):
+    config = tmp_path / "mcp.json"
+    monkeypatch.setattr("harness_fleet.cli._existing_mcp_path_for_client", lambda *a: config)
+    monkeypatch.setenv("OPENROUTER_API_KEY", "sk-or-test-not-real")
+    monkeypatch.delenv("GROQ_API_KEY", raising=False)
+
+    cmd_mcp_install(_install_args(tmp_path, "--env", "OPENROUTER_API_KEY", "--env", "GROQ_API_KEY"))
+
+    out = capsys.readouterr().out
+    assert "env: OPENROUTER_API_KEY (set)" in out
+    assert "GROQ_API_KEY requested but not set in this shell; skipping" in out
+    entry = json.loads(config.read_text(encoding="utf-8"))["mcpServers"]["harness-fleet"]
+    assert entry["env"] == {"OPENROUTER_API_KEY": "sk-or-test-not-real"}
+    assert "GROQ_API_KEY" not in json.dumps(entry)
+
+
+def test_mcp_install_without_env_writes_no_env_block(tmp_path, monkeypatch, capsys):
+    """Regression guard: the default entry stays exactly as it is today."""
+    config = tmp_path / "mcp.json"
+    monkeypatch.setattr("harness_fleet.cli._existing_mcp_path_for_client", lambda *a: config)
+    monkeypatch.setenv("OPENROUTER_API_KEY", "sk-or-test-not-real")
+
+    cmd_mcp_install(_install_args(tmp_path))
+
+    entry = json.loads(config.read_text(encoding="utf-8"))["mcpServers"]["harness-fleet"]
+    assert "env" not in entry
+    # Opt-in only: an ambient key is never written silently, but the user is told.
+    assert "not passed to the client" in capsys.readouterr().out
+
+
+def test_mcp_install_reports_env_keys_a_plain_rerun_drops(tmp_path, monkeypatch, capsys):
+    """Without --env the entry keeps today's shape, so say which keys that removes."""
+    config = tmp_path / "mcp.json"
+    monkeypatch.setattr("harness_fleet.cli._existing_mcp_path_for_client", lambda *a: config)
+    monkeypatch.setenv("OPENROUTER_API_KEY", "sk-or-test-not-real")
+    cmd_mcp_install(_install_args(tmp_path, "--env", "OPENROUTER_API_KEY", "--json"))
+    capsys.readouterr()
+
+    cmd_mcp_install(_install_args(tmp_path))
+
+    assert "env: OPENROUTER_API_KEY dropped" in capsys.readouterr().out
+    entry = json.loads(config.read_text(encoding="utf-8"))["mcpServers"]["harness-fleet"]
+    assert "env" not in entry
+
+
+def test_mcp_install_never_prints_env_values(tmp_path, monkeypatch, capsys):
+    config = tmp_path / "mcp.json"
+    monkeypatch.setattr("harness_fleet.cli._existing_mcp_path_for_client", lambda *a: config)
+    monkeypatch.setenv("OPENROUTER_API_KEY", "sk-or-test-not-real")
+
+    cmd_mcp_install(_install_args(tmp_path, "--env", "OPENROUTER_API_KEY", "--json", "--dry-run"))
+    dry_run_out = capsys.readouterr().out
+    assert not config.exists()
+    assert "OPENROUTER_API_KEY" in dry_run_out
+    payload = json.loads(dry_run_out)
+    assert payload["installed"][0]["server"]["env"] == {"OPENROUTER_API_KEY": "<redacted>"}
+
+    cmd_mcp_install(_install_args(tmp_path, "--env", "OPENROUTER_API_KEY", "--json"))
+    assert "sk-or-test-not-real" not in capsys.readouterr().out
+
+
 def test_csv_survivor_ids_match_the_same_normalized_ids(tmp_path):
     source = tmp_path / "accounts.csv"
     source.write_text("id,text\nhttps://example.com,Some source text\n", encoding="utf-8")

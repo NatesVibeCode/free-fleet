@@ -289,7 +289,7 @@ def cmd_profile(args: argparse.Namespace) -> None:
         loaded_profile = store.load_profile()
         if loaded_profile is None:
             raise FileNotFoundError(
-                f"No Ideal Company Profile found at {profile_path} or in {store.path}. Use 'account-fleet profile --init'."
+                f"No Ideal Company Profile found at {profile_path} or in {store.path}. Use 'harness-fleet profile --init'."
             )
         profile = loaded_profile
         profile.save(profile_path)
@@ -1134,6 +1134,31 @@ def _cursor_config_path() -> Path:
     return Path.home() / ".cursor" / "mcp.json"
 
 
+# Provider keys this codebase already reads from the environment (the
+# `<PROVIDER>_API_KEY` / `<PROVIDER>_BASE_URL` convention in
+# providers/openai_compatible.py plus the doctor's OpenRouter check). Desktop
+# clients do not inherit the shell environment, so these are the variables a user
+# most likely needs to hand to the MCP server with `mcp install --env`.
+MCP_ENV_KNOWN_PROVIDER_VARS: tuple[str, ...] = (
+    "OPENROUTER_API_KEY",
+    "GROQ_API_KEY",
+    "CEREBRAS_API_KEY",
+    "OPENAI_COMPATIBLE_API_KEY",
+    "OLLAMA_BASE_URL",
+)
+
+
+def _redacted_server_entry(entry: dict[str, Any]) -> dict[str, Any]:
+    """Copy of the server entry that never carries secret values.
+
+    The env block is written into the client config on purpose, but the same entry
+    is echoed by `--json` and `--dry-run`, so values must not travel with it.
+    """
+    if "env" not in entry:
+        return entry
+    return {**entry, "env": {name: "<redacted>" for name in entry["env"]}}
+
+
 def _existing_mcp_path_for_client(client: str, workspace_root: Path | None = None) -> Path | None:
     # Try to find existing config; if not found, return default path for that client
     if client == "claude":
@@ -1162,10 +1187,25 @@ def cmd_mcp_install(args: argparse.Namespace) -> None:
         raise ValueError("MCP database must stay below the workspace root")
 
     cli_cmd = installed_cli_path()
-    server_entry = {
+    server_entry: dict[str, Any] = {
         "command": cli_cmd,
         "args": ["serve", "--workspace-root", str(workspace_root), "--db", str(db_path)],
     }
+
+    # --env NAME copies this shell's value into the client config, because desktop
+    # apps do not inherit the shell environment. Missing names are skipped, never
+    # fatal, and only NAMES ever reach human or JSON output.
+    requested_env = _split_csv_list(getattr(args, "env", None)) or []
+    resolved_env: dict[str, str] = {}
+    missing_env: list[str] = []
+    for name in dict.fromkeys(requested_env):
+        value = os.environ.get(name, "")
+        if value:
+            resolved_env[name] = value
+        else:
+            missing_env.append(name)
+    if resolved_env:
+        server_entry["env"] = resolved_env
 
     target_clients: list[str] = []
     requested = (getattr(args, "client", "auto") or "auto").lower()
@@ -1185,6 +1225,7 @@ def cmd_mcp_install(args: argparse.Namespace) -> None:
         raise ValueError(f"unknown --client '{requested}'; use auto, claude, cursor, or all")
 
     results: list[dict[str, Any]] = []
+    notes: list[str] = []
     for client in target_clients:
         config_path = _existing_mcp_path_for_client(client, workspace_root)
         if config_path is None:
@@ -1216,28 +1257,52 @@ def cmd_mcp_install(args: argparse.Namespace) -> None:
             status = "planned"
         else:
             status = "updated" if already is not None else "created"
+        # A plain re-run drops env keys an earlier --env opted into; record them so
+        # the output can say so instead of silently rewriting without them.
+        previous_env = already.get("env") if isinstance(already, dict) else None
+        dropped_env = sorted(set(previous_env) - set(resolved_env)) if isinstance(previous_env, dict) else []
 
         if needs_update and not dry_run:
             config_path.parent.mkdir(parents=True, exist_ok=True)
             servers["harness-fleet"] = server_entry
             # Preserve other keys (e.g., globalShortcut)
             config_path.write_text(json.dumps(existing, indent=2) + "\n", encoding="utf-8")
+            notes.extend(
+                f"env: {name} dropped from the {client} config (not requested in this run)"
+                for name in dropped_env
+            )
 
         results.append({
             "client": client,
             "config_path": str(config_path),
             "status": status,
-            "server": server_entry,
+            "server": _redacted_server_entry(server_entry),
+            "env": sorted(resolved_env),
+            "env_missing": missing_env,
+            "env_dropped": dropped_env,
             "exists": config_path.is_file(),
         })
 
+    summary_lines = [
+        f"{r['client']}: {r['status']} at {r['config_path']}\n  -> {r['server']['command']} {' '.join(r['server']['args'])}"
+        for r in results
+    ]
+    summary_lines.extend(f"env: {name} (set)" for name in resolved_env)
+    summary_lines.extend(f"env: {name} requested but not set in this shell; skipping" for name in missing_env)
+    summary_lines.extend(notes)
+    if not requested_env:
+        # Opt-in only: writing a key into a plaintext config must never be implicit.
+        present = [name for name in MCP_ENV_KNOWN_PROVIDER_VARS if os.environ.get(name)]
+        if present:
+            summary_lines.append(
+                f"tip: {', '.join(present)} is set in this shell but was not passed to the client "
+                f"(desktop apps do not inherit your shell environment). Add it with: "
+                f"harness-fleet mcp install --env {present[0]}"
+            )
     _emit(
         {"installed": results, "workspace_root": str(workspace_root), "db": str(db_path), "command": cli_cmd},
         args.json,
-        "\n".join(
-            f"{r['client']}: {r['status']} at {r['config_path']}\n  -> {r['server']['command']} {' '.join(r['server']['args'])}"
-            for r in results
-        ) + f"\nRestart {', '.join(r['client'] for r in results)} to load harness-fleet. Verify with: harness-fleet doctor --workspace-root {workspace_root} --json",
+        "\n".join(summary_lines) + f"\nRestart {', '.join(r['client'] for r in results)} to load harness-fleet. Verify with: harness-fleet doctor --workspace-root {workspace_root} --json",
     )
 
 
@@ -1818,6 +1883,7 @@ def build_parser() -> argparse.ArgumentParser:
     mcp_install.add_argument("--client", choices=["auto", "claude", "cursor", "all"], default="auto", help="Target client config to write (default: auto-detect, falls back to claude)")
     mcp_install.add_argument("--workspace-root", default=".", help="Workspace root for the MCP server (default: .)")
     mcp_install.add_argument("--db", help="SQLite path below workspace root (default: <workspace>/harness-fleet.db)")
+    mcp_install.add_argument("--env", action="append", metavar="NAME", help="Copy this shell's environment variable into the client config (can repeat or comma-separate, e.g. --env OPENROUTER_API_KEY). Desktop apps do not inherit the shell environment. Unset names are skipped with a warning; only names are ever printed")
     mcp_install.add_argument("--dry-run", action="store_true", help="Preview without writing")
     mcp_install.add_argument("--json", action="store_true", help="Emit machine-readable JSON")
     # Note: --db and --json are also added via _common but we keep explicit for discoverability
@@ -1844,7 +1910,7 @@ def build_parser() -> argparse.ArgumentParser:
     discover.add_argument("--min-source-coverage", type=_coverage_value, default=0.70,
                           help="Require at least this fraction of unique hits to become captured items (default: 0.70; use 0 to disable)")
     discover.add_argument("--ignore-robots", action="store_true", help="Ignore robots.txt (default: respect it)")
-    discover.add_argument("--js", action="store_true", help="Render JS-heavy pages via Playwright (experimental; needs account-fleet[js])")
+    discover.add_argument("--js", action="store_true", help="Render JS-heavy pages via Playwright (experimental; needs harness-fleet[js])")
     discover.add_argument("--output", help="Output file (default: accounts.<format>)")
     discover.add_argument("--format", choices=["csv", "jsonl"], default="csv", help="Output format (default: csv)")
     discover.add_argument("--json", action="store_true", help="Emit machine-readable JSON")
@@ -1884,7 +1950,7 @@ def build_parser() -> argparse.ArgumentParser:
     fetch.add_argument("--yc-query", help="Filter YC companies by keyword")
     fetch.add_argument("--yc-batch", help="Filter YC companies by batch (e.g. W24)")
     fetch.add_argument("--yc-tag", action="append", help="Filter YC companies by tag/industry (repeatable)")
-    fetch.add_argument("--js", action="store_true", help="Render JS-heavy pages via Playwright (experimental; needs account-fleet[js])")
+    fetch.add_argument("--js", action="store_true", help="Render JS-heavy pages via Playwright (experimental; needs harness-fleet[js])")
     fetch.add_argument("--max-jobs", type=int, default=None, help="Max items per source: postings per ATS board, pages per sitemap (default 200), companies for --yc, posts for feeds (default: source-specific)")
     fetch.add_argument("--delay", type=float, default=1.0, help="Politeness delay between fetches in seconds (default: 1.0)")
     fetch.add_argument("--timeout", type=float, default=20.0, help="HTTP timeout in seconds (default: 20.0)")

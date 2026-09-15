@@ -14,11 +14,11 @@ Hard dependencies: stdlib + ``httpx`` (already required). Broad web search
 Apache-2.0, then ``readability-lxml``, Apache-2.0) light up when the optional
 ``discover`` extra is installed::
 
-    pip install account-fleet[discover]
+    pip install harness-fleet[discover]
 
 JS-heavy pages render via the optional ``js`` extra (Playwright, experimental)::
 
-    pip install account-fleet[js] && playwright install chromium
+    pip install harness-fleet[js] && playwright install chromium
 
 Every entry point degrades to a clear install hint when an optional backend is
 missing. Keyless structured sources (Greenhouse/Ashby JSON APIs, HN Algolia,
@@ -46,8 +46,8 @@ import httpx
 
 from .models import InputItem
 
-USER_AGENT = "account-fleet-discover (+https://github.com/NatesVibeCode/account-fleet)"
-DISCOVER_EXTRA = "pip install account-fleet[discover]"
+USER_AGENT = "harness-fleet-discover (+https://github.com/NatesVibeCode/harness-fleet)"
+DISCOVER_EXTRA = "pip install harness-fleet[discover]"
 
 HN_API = "https://hn.algolia.com/api/v1/search"
 YC_API = "https://api.ycombinator.com/v0.1/companies"
@@ -563,7 +563,7 @@ def _parse_robots(txt: str) -> tuple[list[str], list[str]]:
         if key == "user-agent":
             if saw_rule:
                 applicable, saw_rule = False, False
-            applicable = applicable or value in ("*", "account-fleet-discover")
+            applicable = applicable or value in ("*", "harness-fleet-discover")
         elif key in ("allow", "disallow"):
             saw_rule = True
             if applicable and value:
@@ -738,7 +738,7 @@ def require_playwright() -> None:
         import playwright  # noqa: F401
     except ImportError as exc:
         raise DiscoverError(
-            "playwright is not installed (pip install account-fleet[js] "
+            "playwright is not installed (pip install harness-fleet[js] "
             "&& playwright install chromium)"
         ) from exc
 
@@ -754,7 +754,7 @@ def _render_js_page(url: str, timeout: float = 30.0) -> tuple[str, str]:
         from playwright.sync_api import sync_playwright
     except ImportError as exc:
         raise DiscoverError(
-            "playwright is not installed (pip install account-fleet[js] "
+            "playwright is not installed (pip install harness-fleet[js] "
             "&& playwright install chromium)"
         ) from exc
     try:
@@ -1017,7 +1017,7 @@ ARCTIC_COMMENTS = "https://arctic-shift.photon-reddit.com/api/comments/search"
 HN_ITEM_API = "https://hacker-news.firebaseio.com/v0/item/{item_id}.json"
 
 REDDIT_EMPTY = {"", "[removed]", "[deleted]"}
-REDDIT_UA = "account-fleet-discover (+https://github.com/NatesVibeCode/account-fleet; community research)"
+REDDIT_UA = "harness-fleet-discover (+https://github.com/NatesVibeCode/harness-fleet; community research)"
 
 
 def _get_with_backoff(

@@ -243,7 +243,7 @@ def test_search_ddgs_missing_gives_install_hint(monkeypatch):
         return real_import(name, *args, **kwargs)
 
     monkeypatch.setattr(builtins, "__import__", fake_import)
-    with pytest.raises(DiscoverError, match="account-fleet\\[discover\\]"):
+    with pytest.raises(DiscoverError, match="harness-fleet\\[discover\\]"):
         discover.search_ddgs("q")
 
 
@@ -606,7 +606,7 @@ def test_fetch_pdf_without_parser_errors_cleanly(monkeypatch, fake_http):
         headers={"content-type": "application/pdf"}, content=b"%PDF-1.4 fake",
         url="https://f.example/doc.pdf",
     )
-    with pytest.raises(DiscoverError, match="account-fleet\\[discover\\]"):
+    with pytest.raises(DiscoverError, match="harness-fleet\\[discover\\]"):
         fetch_text("https://f.example/doc.pdf", respect_robots=False)
 
 
@@ -905,7 +905,7 @@ def _playwright_installed() -> bool:
 
 @pytest.mark.skipif(_playwright_installed(), reason="playwright is installed, so the missing-extra path is unreachable")
 def test_js_render_missing_playwright_errors_cleanly(fake_http):
-    with pytest.raises(DiscoverError, match="account-fleet\\[js\\]"):
+    with pytest.raises(DiscoverError, match="harness-fleet\\[js\\]"):
         fetch_text("https://a.example/1", respect_robots=False, render_js=True)
 
 
@@ -920,7 +920,7 @@ def test_require_playwright_hint(monkeypatch):
         return real_import(name, *args, **kwargs)
 
     monkeypatch.setattr(builtins, "__import__", fake_import)
-    with pytest.raises(DiscoverError, match="account-fleet\\[js\\]"):
+    with pytest.raises(DiscoverError, match="harness-fleet\\[js\\]"):
         discover.require_playwright()
 
 
@@ -935,7 +935,7 @@ def test_run_discovery_js_requires_playwright_upfront(monkeypatch):
         return real_import(name, *args, **kwargs)
 
     monkeypatch.setattr(builtins, "__import__", fake_import)
-    with pytest.raises(DiscoverError, match="account-fleet\\[js\\]"):
+    with pytest.raises(DiscoverError, match="harness-fleet\\[js\\]"):
         discover.run_discovery(["q"], backends=["hn"], render_js=True)
 
 

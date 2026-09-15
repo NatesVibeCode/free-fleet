@@ -1,6 +1,6 @@
-# account-fleet
+# harness-fleet
 
-[![CI](https://github.com/NatesVibeCode/account-fleet/actions/workflows/ci.yml/badge.svg)](https://github.com/NatesVibeCode/account-fleet/actions/workflows/ci.yml)
+[![CI](https://github.com/NatesVibeCode/harness-fleet/actions/workflows/ci.yml/badge.svg)](https://github.com/NatesVibeCode/harness-fleet/actions/workflows/ci.yml)
 [![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
 [![Python 3.10+](https://img.shields.io/badge/python-3.10%2B-blue.svg)](pyproject.toml)
 
@@ -8,7 +8,7 @@
 
 Local outbound intelligence engine for high-throughput, evidence-grounded account research across free, paid, and local LLMs — with SQLite checkpointing, 4-layer compounding funnels, and deterministic quote verification.
 
-*Canonical CLI is `harness-fleet`. (The `account-fleet` research CLI ships separately from the account-fleet distribution — install one fleet per environment.)*
+*Canonical CLI is `harness-fleet`. The account-fleet and career-fleet distributions ship their own entry points from their own checkouts — install one fleet per environment.*
 
 ## Migrating from free-fleet
 
@@ -44,16 +44,16 @@ pinecone.io,"Hiring Infrastructure Engineer scaling vector search across multi-t
 
 ```bash
 # Initialize the typed account-research preset (evidence checklist, identified_gap; score/fit_tier derived)
-account-fleet init research-demo --preset account-research
+harness-fleet init research-demo --preset account-research
 
 # Process the accounts through free model routes (zero API spend)
-account-fleet run research-demo --input accounts.csv --id-column company --text-column careers_text --run-id campaign-01
+harness-fleet run research-demo --input accounts.csv --id-column company --text-column careers_text --run-id campaign-01
 ```
 
 ### 2. Export the top 25 ranked accounts
 
 ```bash
-account-fleet export campaign-01 --format csv --sort-by score --desc --top 25 --rank --output ranked_accounts.csv
+harness-fleet export campaign-01 --format csv --sort-by score --desc --top 25 --rank --output ranked_accounts.csv
 ```
 
 ### 3. Output (`ranked_accounts.csv`)
@@ -106,6 +106,7 @@ That one command:
 - Creates a private Python 3.10+ environment (`.venv`) and installs `harness-fleet` into it.
 - Sets up a workspace at `~/harness-fleet-workspace` and runs the offline demo there.
 - Registers the `harness-fleet` MCP tools with Claude Desktop (or Cursor).
+- If `OPENROUTER_API_KEY` is set in your shell, passes it into that client config too (values are never printed), so OpenRouter routes work from the desktop app.
 
 Pass a different workspace folder if you want one, e.g. `./install.sh ~/my-harness-workspace`.
 Restart Claude Desktop (or Cursor) after it finishes.
@@ -115,8 +116,8 @@ Restart Claude Desktop (or Cursor) after it finishes.
 ## Quickstart — 60-Second Demo (No API Keys)
 
 ```bash
-git clone https://github.com/NatesVibeCode/account-fleet.git
-cd account-fleet
+git clone https://github.com/NatesVibeCode/harness-fleet.git
+cd harness-fleet
 python3 -m venv .venv
 source .venv/bin/activate
 python -m pip install .
@@ -124,15 +125,15 @@ python -m pip install .
 # Run in your own workspace; output files are written in the current directory.
 mkdir my-workspace
 cd my-workspace
-account-fleet setup
-account-fleet quickstart --demo --run-id demo-01
+harness-fleet setup
+harness-fleet quickstart --demo --run-id demo-01
 
 # Outputs:
 #   runs/demo-01/clean_packet.json   (self-validating packet)
 #   runs/demo-01/clean_packet.csv    (flat CSV)
 ```
 
-On Windows PowerShell, replace the two virtual-environment commands with `py -m venv .venv` and `.venv\Scripts\Activate.ps1`. If activation is restricted, run `..\.venv\Scripts\account-fleet.exe` directly from `my-workspace`.
+On Windows PowerShell, replace the two virtual-environment commands with `py -m venv .venv` and `.venv\Scripts\Activate.ps1`. If activation is restricted, run `..\.venv\Scripts\harness-fleet.exe` directly from `my-workspace`.
 
 The demo uses synthetic scores for ten bundled sample accounts and makes no model API calls. It verifies installation and export, not research quality. Demo routes are excluded from real campaigns unless explicitly selected.
 
@@ -140,10 +141,10 @@ The demo uses synthetic scores for ten bundled sample accounts and makes no mode
 
 ```bash
 mkdir my-workspace && cd my-workspace
-account-fleet setup --workspace-root . --refresh-routes
+harness-fleet setup --workspace-root . --refresh-routes
 ```
 
-For a real run, configure one of the seven CLI harnesses (`opencode`, `claude`, `codex`, `cursor`, `grok`, `muse`, `antigravity`) with your own provider access, set `OPENROUTER_API_KEY`, or register a running local model, for example `account-fleet routes add ollama/your-installed-model --provider ollama --free`. Refreshing routes alone does not authenticate you. `account-fleet doctor` checks configuration; `account-fleet test research-demo --input accounts.csv --id-column company --text-column careers_text --provider ollama` tests a real batch before a large campaign.
+For a real run, configure one of the seven CLI harnesses (`opencode`, `claude`, `codex`, `cursor`, `grok`, `muse`, `antigravity`) with your own provider access, set `OPENROUTER_API_KEY`, or register a running local model, for example `harness-fleet routes add ollama/your-installed-model --provider ollama --free`. Refreshing routes alone does not authenticate you. `harness-fleet doctor` checks configuration; `harness-fleet test research-demo --input accounts.csv --id-column company --text-column careers_text --provider ollama` tests a real batch before a large campaign.
 
 Each named provider uses its own settings: `OLLAMA_BASE_URL`, `LMSTUDIO_BASE_URL`, `GROQ_API_KEY`, and so on. `OPENAI_COMPATIBLE_BASE_URL` and `OPENAI_COMPATIBLE_API_KEY` configure only `--provider openai_compatible`. Environment variables must be available to the process running the CLI or MCP server; `.env` files are not loaded automatically.
 
@@ -396,11 +397,15 @@ Pass `--json` to any command for machine-readable JSON output. `--free-only` is 
 **One-command install (recommended for GTM folks):**
 ```bash
 harness-fleet mcp install --workspace-root "$PWD"  # auto-detects Claude/Cursor, writes mcpServers entry
+# Also hand the desktop app a provider key (repeatable or comma-separated)
+harness-fleet mcp install --env OPENROUTER_API_KEY
 # Preview first
 harness-fleet mcp install --dry-run --json
 harness-fleet doctor --workspace-root "$PWD" --json  # verify
 # Restart Claude/Cursor to load
 ```
+
+Desktop apps do not inherit your shell environment, so keys such as `OPENROUTER_API_KEY` (or `GROQ_API_KEY`, `OLLAMA_BASE_URL`, …) must be passed explicitly with `--env NAME`; the CLI writes the value into the client config and only ever prints the variable name, never the value. Unset names are skipped with a warning.
 
 Manual entry:
 ```json

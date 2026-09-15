@@ -143,6 +143,10 @@ Say ""
 Say "Step 3/7 - Creating the workspace"
 $ws = if ($args.Count -ge 1) { $args[0] } else { Join-Path $HOME "harness-fleet-workspace" }
 New-Item -ItemType Directory -Force -Path $ws | Out-Null
+# Canonicalize to an absolute path. Every step below Push-Location's into the
+# workspace, so a relative --db would otherwise resolve against the *new*
+# working directory and land in a nested path.
+$ws = (Resolve-Path -LiteralPath $ws).Path
 Ok "Workspace at $ws"
 
 # The database path is pinned explicitly (rather than relying on the default or
@@ -211,9 +215,18 @@ if (-not (Test-Path $demoJson) -or -not (Test-Path $demoCsv)) {
 
 Say ""
 Say "Step 7/7 - Registering harness-fleet with Claude Desktop / Cursor"
-& $cli mcp install --workspace-root $ws --db $db *>> $log
+# Desktop apps do not inherit this shell's environment, so hand the caller's
+# OpenRouter key to the MCP server when one is set (the CLI never prints values).
+$mcpInstallArgs = @("mcp", "install", "--workspace-root", $ws, "--db", $db)
+if ($env:OPENROUTER_API_KEY) {
+  $mcpInstallArgs += @("--env", "OPENROUTER_API_KEY")
+}
+& $cli @mcpInstallArgs *>> $log
 if ($LASTEXITCODE -eq 0) {
   Ok "MCP server registered"
+  if ($env:OPENROUTER_API_KEY) {
+    Say "  OPENROUTER_API_KEY passed into the client config (value not shown)"
+  }
 } else {
   Warn "Could not register with Claude Desktop / Cursor automatically."
   Say "  Add this entry to your MCP client config manually, then restart the client:"
